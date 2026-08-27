@@ -1,0 +1,9 @@
+Hi {{ member_name }},
+
+This is a reminder that the challenge "{{ challenge_title }}" is due {{ deadline }} ({{ days_left }} day{{ "s" if days_left != 1 else "" }} from now).
+{% if milestone == "T-1" %}
+This is your final reminder before the deadline — please try to complete it soon.
+{% else %}
+You still have a few days left — no rush, but don't leave it until the last minute.
+{% endif %}
+— HSLab CTF Classroom

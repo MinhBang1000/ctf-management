@@ -1,0 +1,59 @@
+# Secrets and machine-specific configuration
+.env
+.env.*
+!.env.example
+
+# Python environments, bytecode, caches, and packaging output
+.venv/
+venv/
+backend/venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Celery runtime state
+celerybeat-schedule
+celerybeat-schedule.*
+backend/celerybeat-schedule
+backend/celerybeat-schedule.*
+
+# Frontend dependencies and generated output
+node_modules/
+frontend/node_modules/
+.next/
+frontend/.next/
+out/
+build/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Runtime logs and process state
+logs/
+*.log
+*.pid
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Backups contain real application data
+backups/
+*.dump
+
+# Local tooling and editor settings
+.agents/
+.codex/
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS metadata
+.DS_Store
+Thumbs.db

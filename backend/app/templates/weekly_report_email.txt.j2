@@ -1,0 +1,30 @@
+Weekly Progress Report — {{ tenant_name }}
+Week of {{ period_start }} to {{ period_end }}
+
+Summary for last week ({{ period_start }} – {{ period_end }}):
+- Completed on time: {{ completed_count }} / {{ total_count }} ({{ completion_pct }}%)
+- Late: {{ late_count }}
+- Missing: {{ missing_count }}
+{% if early_items %}
+
+Ahead of schedule this week ({{ current_period_start }} – {{ current_period_end }}):
+{% for item in early_items %}
+- {{ item.member_name }} — {{ item.challenge_title }}
+{% endfor %}
+{% endif %}
+{% if late_items %}
+
+Needs follow-up (late last week):
+{% for item in late_items %}
+- {{ item.member_name }} — {{ item.challenge_title }}
+{% endfor %}
+{% endif %}
+{% if missing_items %}
+
+Missing last week:
+{% for item in missing_items %}
+- {{ item.member_name }} — {{ item.challenge_title }}
+{% endfor %}
+{% endif %}
+
+— Draft generated automatically by HSLab CTF Classroom. Edit before sending to your professor.

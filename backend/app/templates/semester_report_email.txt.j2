@@ -1,0 +1,23 @@
+Semester Report — {{ tenant_name }}
+{{ semester_name }} ({{ period_start }} to {{ period_end }})
+{% if spans_platform_switch %}
+⚠ This semester spans a Platform switch: {{ platforms_used | map(attribute='name') | join(', ') }}.
+Weekly trend and per-member stats below are labeled by platform — completion and
+points should be read per-platform where noted, not as one continuous scale.
+{% endif %}
+
+Weekly trend:
+{% for week in weekly_trend %}
+- Week {{ week.week_number }}{% if week.platform_names %} [{{ week.platform_names | join(", ") }}]{% endif %}: {{ week.challenge_count }} challenge(s), {{ week.completion_pct }}% completed
+{% endfor %}
+
+Per-member ranking (by cumulative points):
+{% for m in members %}
+{{ m.rank }}. {{ m.member_name }} — {{ m.cumulative_points }} pts — Done: {{ m.done_count }}, Late: {{ m.late_count }}, Missing: {{ m.missing_count }}
+{% for bp in m.by_platform %}
+     · {{ bp.platform_name }}: {{ bp.points }} pts (Done: {{ bp.done }}, Late: {{ bp.late }}, Missing: {{ bp.missing }})
+{% endfor %}
+{% endfor %}
+
+— Draft generated automatically by HSLab CTF Classroom. Edit before sending to your professor.
+Full data (including per-week/per-platform breakdown) is available as PDF/Excel export.

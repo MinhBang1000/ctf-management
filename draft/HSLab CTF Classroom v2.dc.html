@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  body { margin: 0; background: #eceff0; }
+  a { color: #0d7d8f; text-decoration: none; }
+  a:hover { color: #095c6a; }
+</style>
+</helmet>
+<div style="font-family: 'IBM Plex Sans', system-ui, sans-serif; background: #eceff0; color: #101619; padding: 56px 56px 96px; display: flex; flex-direction: column; gap: 60px; -webkit-font-smoothing: antialiased;">
+
+  <div style="display: flex; align-items: flex-start; gap: 20px; max-width: 900px;">
+    <div style="width: 46px; height: 46px; border-radius: 11px; background: #101619; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 0 10px; flex: none;">
+      <span style="display: block; height: 3px; width: 100%; border-radius: 2px; background: #4fd1e0;"></span>
+      <span style="display: block; height: 3px; width: 70%; border-radius: 2px; background: #ffffff; opacity: 0.85;"></span>
+      <span style="display: block; height: 3px; width: 42%; border-radius: 2px; background: #ffffff; opacity: 0.45;"></span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: #0d7d8f;">High Speed Network Lab · CTF Classroom</div>
+      <div style="font-size: 29px; font-weight: 600; letter-spacing: -0.02em;">Lab Admin — v2, simplified</div>
+      <div style="font-size: 15px; line-height: 1.6; color: #5d666d; text-wrap: pretty;">Top-bar navigation instead of a sidebar, every number stated once, and lab identity carried by the throughput mark and the signal-teal accent. Four states keep their semantic colors; all technical values stay monospace.</div>
+    </div>
+  </div>
+
+  <!-- ============ 01 DASHBOARD ============ -->
+  <div id="s1" style="display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; align-items: baseline; gap: 12px;">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8b949a;">01</span>
+      <span style="font-size: 17px; font-weight: 600;">Dashboard</span>
+      <span style="font-size: 13.5px; color: #8b949a;">One week, one screen: state of the week, who needs a nudge, is automation healthy</span>
+    </div>
+
+    <div data-screen-label="01 Dashboard" style="width: 1360px; background: #ffffff; border: 1px solid #e0e4e6; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(16,22,25,0.05), 0 14px 34px -20px rgba(16,22,25,0.3);">
+      <div style="height: 3px; background: #101619; display: flex;"><span style="width: 22%; background: #4fd1e0;"></span></div>
+
+      <div style="height: 60px; padding: 0 22px; display: flex; align-items: center; gap: 22px; border-bottom: 1px solid #eaedee;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="width: 26px; height: 26px; border-radius: 7px; background: #101619; display: flex; flex-direction: column; justify-content: center; gap: 2.5px; padding: 0 6px; flex: none;">
+            <span style="display: block; height: 2px; width: 100%; border-radius: 1px; background: #4fd1e0;"></span>
+            <span style="display: block; height: 2px; width: 68%; border-radius: 1px; background: #ffffff; opacity: 0.85;"></span>
+            <span style="display: block; height: 2px; width: 40%; border-radius: 1px; background: #ffffff; opacity: 0.45;"></span>
+          </span>
+          <span style="font-size: 14px; font-weight: 600; letter-spacing: -0.01em;">High Speed Network Lab</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8b949a; padding: 2px 7px; border-radius: 5px; background: #f2f5f5;">hsnl</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 4px; margin-left: 8px;">
+          <span style="padding: 6px 12px; border-radius: 7px; background: #eef6f7; color: #095c6a; font-size: 13.5px; font-weight: 500;">Dashboard</span>
+          <span style="padding: 6px 12px; border-radius: 7px; color: #5d666d; font-size: 13.5px;">Progress</span>
+          <span style="padding: 6px 12px; border-radius: 7px; color: #5d666d; font-size: 13.5px;">Challenges</span>
+          <span style="padding: 6px 12px; border-radius: 7px; color: #5d666d; font-size: 13.5px;">Members</span>
+          <span style="padding: 6px 12px; border-radius: 7px; color: #5d666d; font-size: 13.5px;">Automation</span>
+        </div>
+        <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #8b949a;">root-me · synced 06:00</span>
+          <span style="width: 28px; height: 28px; border-radius: 50%; background: #dceef1; color: #095c6a; display: grid; place-items: center; font-size: 11.5px; font-weight: 600;">NT</span>
+        </div>
+      </div>
+
+      <div style="padding: 26px 22px 28px; display: flex; flex-direction: column; gap: 18px;">
+        <div style="display: flex; align-items: flex-end; gap: 16px;">
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <div style="font-size: 23px; font-weight: 600; letter-spacing: -0.015em;">Week 09 · Web Exploitation</div>
+            <div style="font-size: 13.5px; color: #667079;">Due <span style="font-family: 'IBM Plex Mono', monospace; color: #2c343a;">2026-08-27 23:59</span> · presenter <span style="font-family: 'IBM Plex Mono', monospace; color: #2c343a;">@lehoang</span> · 3 days left</div>
+          </div>
+          <div style="margin-left: auto; display: flex; gap: 8px;">
+            <span style="padding: 8px 14px; border-radius: 8px; border: 1px solid #dfe3e5; font-size: 13px; font-weight: 500; color: #2c343a;">Remind 4 missing</span>
+            <span style="padding: 8px 14px; border-radius: 8px; background: #101619; color: #fff; font-size: 13px; font-weight: 500;">Sync now</span>
+          </div>
+        </div>
+
+        <div style="border: 1px solid #e4e8e9; border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 16px;">
+          <div style="display: flex; align-items: baseline; gap: 12px;">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 34px; font-weight: 500; letter-spacing: -0.02em;">17<span style="font-size: 19px; color: #9aa2a8;">/24</span></span>
+            <span style="font-size: 14px; color: #5d666d;">members completed this week</span>
+            <span style="margin-left: auto; font-size: 12.5px; color: #8b949a;">last week 15/24</span>
+          </div>
+          <div style="display: flex; height: 10px; border-radius: 5px; overflow: hidden; gap: 2px;">
+            <div style="width: 25%; background: #2563eb;"></div>
+            <div style="width: 45.8%; background: #16a34a;"></div>
+            <div style="width: 12.5%; background: #d97706;"></div>
+            <div style="width: 16.7%; background: #dc2626;"></div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+            <sc-for list="{{ summary }}" as="s" hint-placeholder-count="4">
+              <div style="display: flex; align-items: baseline; gap: 8px;">
+                <span style="{{ s.dot }}"></span>
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 18px;">{{ s.count }}</span>
+                <span style="font-size: 12.5px; font-weight: 500;">{{ s.label }}</span>
+                <span style="font-size: 12px; color: #9aa2a8;">{{ s.hint }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 372px; gap: 14px; align-items: start;">
+          <div style="border: 1px solid #e4e8e9; border-radius: 12px; overflow: hidden;">
+            <div style="padding: 14px 18px; border-bottom: 1px solid #eef1f2; display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 14px; font-weight: 600;">Needs a nudge</span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8b949a;">7 of 24</span>
+              <a href="#s2" style="margin-left: auto; font-size: 12.5px; font-weight: 500;">Open progress grid</a>
+            </div>
+            <sc-for list="{{ attention }}" as="row" hint-placeholder-count="5">
+              <div style="display: grid; grid-template-columns: 180px 150px 1fr 84px; align-items: center; gap: 12px; padding: 12px 18px; border-bottom: 1px solid #f4f6f6;">
+                <span style="font-size: 13.5px; font-weight: 500;">{{ row.name }}</span>
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: #667079;">{{ row.username }}</span>
+                <span style="font-size: 12.5px; color: #8b949a;">{{ row.note }}</span>
+                <span style="{{ row.pill }}">{{ row.status }}</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <div style="border: 1px solid #e4e8e9; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+              <div style="display: flex; align-items: center; gap: 9px;">
+                <span style="width: 7px; height: 7px; border-radius: 50%; background: #16a34a;"></span>
+                <span style="font-size: 14px; font-weight: 600;">Automation healthy</span>
+                <a href="#s3" style="margin-left: auto; font-size: 12.5px; font-weight: 500;">Platform settings</a>
+              </div>
+              <sc-for list="{{ jobs }}" as="job" hint-placeholder-count="3">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="{{ job.dot }}"></span>
+                  <span style="font-size: 13px; color: #2c343a;">{{ job.name }}</span>
+                  <span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #8b949a;">{{ job.meta }}</span>
+                </div>
+              </sc-for>
+              <div style="border-top: 1px solid #eef1f2; padding-top: 12px; display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 13px; color: #2c343a;">Focus platform</span>
+                <span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #101619; padding: 2px 8px; border-radius: 5px; background: #f2f5f5;">root-me</span>
+              </div>
+            </div>
+
+            <div style="border: 1px solid #f0e3c9; background: #fffbf3; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 10px;">
+              <span style="font-size: 13.5px; font-weight: 600; color: #8a5a10;">2 reports waiting for you</span>
+              <span style="font-size: 12.5px; color: #86663a; line-height: 1.55;">Weeks 08 and 09 are drafted. Nothing is emailed to the professor until you approve.</span>
+              <a href="#s4" style="align-self: flex-start; margin-top: 2px; padding: 7px 13px; border-radius: 8px; background: #8a5a10; color: #fff; font-size: 12.5px; font-weight: 500;">Review drafts</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 02 PROGRESS GRID ============ -->
+  <div id="s2" style="display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; align-items: baseline; gap: 12px;">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8b949a;">02</span>
+      <span style="font-size: 17px; font-weight: 600;">Progress Tracking</span>
+      <span style="font-size: 13.5px; color: #8b949a;">Spreadsheet grid — member × week, frozen name column, click a cell to override</span>
+    </div>
+
+    <div data-screen-label="02 Progress grid" style="width: 1360px; background: #ffffff; border: 1px solid #e0e4e6; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(16,22,25,0.05), 0 14px 34px -20px rgba(16,22,25,0.3); display: flex; flex-direction: column;">
+      <div style="height: 3px; background: #101619; display: flex;"><span style="width: 22%; background: #4fd1e0;"></span></div>
+
+      <div style="height: 60px; padding: 0 22px; display: flex; align-items: center; gap: 22px; border-bottom: 1px solid #eaedee;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="width: 26px; height: 26px; border-radius: 7px; background: #101619; display: flex; flex-direction: column; justify-content: center; gap: 2.5px; padding: 0 6px; flex: none;">
+            <span style="display: block; height: 2px; width: 100%; border-radius: 1px; background: #4fd1e0;"></span>
+            <span style="display: block; height: 2px; width: 68%; border-radius: 1px; background: #ffffff; opacity: 0.85;"></span>
+            <span style="display: block; height: 2px; width: 40%; border-radius: 1px; background: #ffffff; opacity: 0.45;"></span>
+          </span>
+          <span style="font-size: 14px; font-weight: 600; letter-spacing: -0.01em;">High Speed Network Lab</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 4px; margin-left: 8px;">
+          <span style="padding: 6px 12px; border-radius: 7px; color: #5d666d; font-size: 13.5px;">Dashboard</span>
+          <span style="padding: 6px 12px; border-radius: 7px; background: #eef6f7; color: #095c6a; font-size: 13.5px; font-weight: 500;">Progress</span>
+          <span style="padding: 6px 12px; border-radius: 7px; color: #5d666d; font-size: 13.5px;">Challenges</span>
+          <span style="padding: 6px 12px; border-radius: 7px; color: #5d666d; font-size: 13.5px;">Members</span>
+          <span style="padding: 6px 12px; border-radius: 7px; color: #5d666d; font-size: 13.5px;">Automation</span>
+        </div>
+        <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+          <span style="padding: 6px 12px; border-radius: 8px; border: 1px solid #dfe3e5; font-size: 13px; color: #2c343a;">Semester 2026.1 ▾</span>
+          <span style="padding: 6px 12px; border-radius: 8px; border: 1px solid #dfe3e5; font-size: 13px; color: #2c343a;">Export CSV</span>
+        </div>
+      </div>
+
+      <div style="padding: 14px 22px; display: flex; align-items: center; gap: 18px; border-bottom: 1px solid #eaedee;">
+        <span style="font-size: 15px; font-weight: 600;">24 members · 9 weeks</span>
+        <div style="display: flex; gap: 12px; margin-left: 6px;">
+          <sc-for list="{{ legend }}" as="l" hint-placeholder-count="5">
+            <span style="display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: #5d666d;"><span style="{{ l.chip }}">{{ l.key }}</span>{{ l.label }}</span>
+          </sc-for>
+        </div>
+        <span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #8b949a;">last_sync 2026-08-24 06:00:12</span>
+      </div>
+
+      <div style="display: flex;">
+        <div style="border-right: 1px solid #dde1e3; flex: none;">
+          <div style="display: grid; grid-template-columns: 210px 148px; height: 46px; border-bottom: 1px solid #dde1e3; background: #f7f9f9;">
+            <div style="display: flex; align-items: center; padding: 0 16px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #667079;">Member</div>
+            <div style="display: flex; align-items: center; padding: 0 12px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #667079;">Username</div>
+          </div>
+          <sc-for list="{{ rows }}" as="row" hint-placeholder-count="12">
+            <div style="{{ row.rowStyle }}">
+              <div style="display: flex; align-items: center; gap: 10px; padding: 0 16px; min-width: 0;">
+                <span style="width: 24px; height: 24px; border-radius: 50%; background: #eaf2f3; color: #095c6a; display: grid; place-items: center; font-size: 10px; font-weight: 600; flex: none;">{{ row.initials }}</span>
+                <span style="font-size: 13.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ row.name }}</span>
+              </div>
+              <div style="display: flex; align-items: center; padding: 0 12px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #667079;">{{ row.username }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="flex: 1; min-width: 0;">
+          <div style="display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)) 118px; height: 46px; border-bottom: 1px solid #dde1e3; background: #f7f9f9;">
+            <sc-for list="{{ weeks }}" as="wk" hint-placeholder-count="9">
+              <div style="display: flex; align-items: center; justify-content: center; gap: 6px; border-left: 1px solid #eaedee;">
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 600; color: #2c343a;">{{ wk.code }}</span>
+                <span style="font-size: 10.5px; color: #9aa2a8;">{{ wk.cat }}</span>
+              </div>
+            </sc-for>
+            <div style="display: flex; align-items: center; justify-content: flex-end; padding: 0 16px; border-left: 1px solid #dde1e3; font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #667079;">Rate</div>
+          </div>
+          <sc-for list="{{ rows }}" as="row" hint-placeholder-count="12">
+            <div style="{{ row.gridStyle }}">
+              <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="9">
+                <div style="display: grid; place-items: center; border-left: 1px solid #f2f4f5;">
+                  <span style="{{ cell.style }}">{{ cell.label }}</span>
+                </div>
+              </sc-for>
+              <div style="display: flex; align-items: center; justify-content: flex-end; gap: 9px; padding: 0 16px; border-left: 1px solid #eaedee;">
+                <span style="width: 40px; height: 4px; border-radius: 2px; background: #ebeeef; overflow: hidden;"><span style="{{ row.barStyle }}"></span></span>
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #2c343a; width: 36px; text-align: right;">{{ row.pct }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="height: 46px; border-top: 1px solid #dde1e3; background: #f7f9f9; display: flex; align-items: center; padding: 0 22px; gap: 16px;">
+        <span style="font-size: 12.5px; color: #667079;">Click a cell to override manually · changes are logged with your name</span>
+        <span style="margin-left: auto; font-size: 12.5px; color: #667079;">Lab average <span style="font-family: 'IBM Plex Mono', monospace; color: #15803d; font-weight: 500;">72.6%</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 03 MODAL ============ -->
+  <div id="s3" style="display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; align-items: baseline; gap: 12px;">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8b949a;">03</span>
+      <span style="font-size: 17px; font-weight: 600;">Switch focus platform</span>
+      <span style="font-size: 13.5px; color: #8b949a;">One decision, two facts, two buttons</span>
+    </div>
+
+    <div data-screen-label="03 Switch focus platform" style="width: 1360px; height: 700px; position: relative; background: #ffffff; border: 1px solid #e0e4e6; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(16,22,25,0.05), 0 14px 34px -20px rgba(16,22,25,0.3);">
+      <div style="position: absolute; inset: 0; padding: 30px 34px; display: flex; flex-direction: column; gap: 18px;">
+        <div style="font-size: 22px; font-weight: 600; letter-spacing: -0.015em;">Platforms</div>
+        <div style="display: flex; flex-direction: column; gap: 10px; max-width: 860px;">
+          <div style="border: 1px solid #e4e8e9; border-radius: 11px; padding: 16px 18px; display: flex; align-items: center; gap: 14px;">
+            <div style="width: 34px; height: 34px; border-radius: 9px; background: #f2f5f5; display: grid; place-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: #5d666d;">RM</div>
+            <div style="display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 600;">Root Me</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #9aa2a8;">rootme · 24 linked accounts</span></div>
+            <span style="margin-left: auto; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; padding: 4px 9px; border-radius: 6px; background: #e6f4f6; color: #095c6a;">FOCUS</span>
+          </div>
+          <div style="border: 1px solid #e4e8e9; border-radius: 11px; padding: 16px 18px; display: flex; align-items: center; gap: 14px;">
+            <div style="width: 34px; height: 34px; border-radius: 9px; background: #f2f5f5; display: grid; place-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: #5d666d;">TH</div>
+            <div style="display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 600;">TryHackMe</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #9aa2a8;">tryhackme · 15 linked accounts</span></div>
+            <span style="margin-left: auto; padding: 7px 13px; border-radius: 8px; border: 1px solid #dfe3e5; font-size: 13px; font-weight: 500;">Make focus</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="position: absolute; inset: 0; background: rgba(16,22,25,0.44);"></div>
+
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 480px; background: #fff; border-radius: 14px; box-shadow: 0 26px 64px -14px rgba(16,22,25,0.5); overflow: hidden;">
+        <div style="padding: 24px 24px 20px; display: flex; flex-direction: column; gap: 18px;">
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <span style="font-size: 18px; font-weight: 600; letter-spacing: -0.01em;">Make TryHackMe the focus platform?</span>
+            <span style="font-size: 13.5px; line-height: 1.6; color: #5d666d; text-wrap: pretty;">The lab syncs one platform at a time. Root Me history stays exactly as it is.</span>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid #e4e8e9; border-radius: 10px; background: #fafbfb;">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #9aa2a8; text-decoration: line-through;">root-me</span>
+            <span style="color: #9aa2a8; font-size: 14px;">→</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; color: #095c6a;">tryhackme</span>
+            <span style="margin-left: auto; font-size: 12px; color: #8b949a;">next sync 06:00 tomorrow</span>
+          </div>
+
+          <div style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; background: #fdf0ef;">
+            <span style="width: 8px; height: 8px; border-radius: 2px; background: #dc2626; margin-top: 5px; flex: none;"></span>
+            <span style="font-size: 13px; line-height: 1.55; color: #8a2c2c;"><strong style="font-weight: 600;">9 members</strong> have no TryHackMe account linked yet — they will show as Missing until they link one.</span>
+          </div>
+        </div>
+
+        <div style="padding: 14px 20px; border-top: 1px solid #eef1f2; background: #fafbfb; display: flex; align-items: center; gap: 10px;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9aa2a8;">logged as lab_leader</span>
+          <span style="margin-left: auto; padding: 8px 15px; border-radius: 8px; border: 1px solid #dfe3e5; background: #fff; font-size: 13px; font-weight: 500;">Cancel</span>
+          <span style="padding: 8px 16px; border-radius: 8px; background: #0d7d8f; color: #fff; font-size: 13px; font-weight: 500;">Switch platform</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 04 EMAIL DRAFT ============ -->
+  <div id="s4" style="display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; align-items: baseline; gap: 12px;">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8b949a;">04</span>
+      <span style="font-size: 17px; font-weight: 600;">Report draft</span>
+      <span style="font-size: 13.5px; color: #8b949a;">Drafts on the left, the letter on the right — read it, edit it, approve it</span>
+    </div>
+
+    <div data-screen-label="04 Report draft" style="width: 1360px; height: 760px; background: #ffffff; border: 1px solid #e0e4e6; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(16,22,25,0.05), 0 14px 34px -20px rgba(16,22,25,0.3); display: flex; flex-direction: column;">
+      <div style="height: 3px; background: #101619; display: flex;"><span style="width: 22%; background: #4fd1e0;"></span></div>
+
+      <div style="height: 60px; padding: 0 22px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #eaedee; flex: none;">
+        <span style="width: 26px; height: 26px; border-radius: 7px; background: #101619; display: flex; flex-direction: column; justify-content: center; gap: 2.5px; padding: 0 6px; flex: none;">
+          <span style="display: block; height: 2px; width: 100%; border-radius: 1px; background: #4fd1e0;"></span>
+          <span style="display: block; height: 2px; width: 68%; border-radius: 1px; background: #ffffff; opacity: 0.85;"></span>
+          <span style="display: block; height: 2px; width: 40%; border-radius: 1px; background: #ffffff; opacity: 0.45;"></span>
+        </span>
+        <span style="font-size: 14px; font-weight: 600;">High Speed Network Lab</span>
+        <span style="font-size: 13px; color: #c3c9cc;">/</span>
+        <span style="font-size: 13.5px; color: #5d666d;">Reports</span>
+        <span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #8b949a;">smtp hsnl.edu.vn</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 296px 1fr; flex: 1; min-height: 0;">
+        <div style="border-right: 1px solid #eaedee; background: #fafbfb; display: flex; flex-direction: column;">
+          <div style="padding: 14px 16px; border-bottom: 1px solid #eaedee; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 13.5px; font-weight: 600;">Drafts</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 2px 7px; border-radius: 999px; background: #fbf3e2; color: #a16207;">2 pending</span>
+          </div>
+          <sc-for list="{{ drafts }}" as="d" hint-placeholder-count="5">
+            <div style="{{ d.itemStyle }}">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 13.5px; font-weight: 600;">{{ d.title }}</span>
+                <span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #9aa2a8;">{{ d.time }}</span>
+              </div>
+              <span style="{{ d.badgeStyle }}">{{ d.badge }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display: flex; flex-direction: column; min-height: 0;">
+          <div style="padding: 20px 30px 16px; border-bottom: 1px solid #eef1f2; display: flex; flex-direction: column; gap: 10px; flex: none;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 19px; font-weight: 600; letter-spacing: -0.01em;">Weekly Report — Week 09</span>
+              <span style="font-size: 11.5px; font-weight: 500; padding: 4px 10px; border-radius: 6px; background: #fbf3e2; color: #a16207;">Awaiting your approval</span>
+            </div>
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #8b949a;">to son.tran@hsnl.edu.vn · generated 2026-08-24 07:00 · rpt_9f21c4</div>
+          </div>
+
+          <div style="flex: 1; min-height: 0; padding: 26px 30px; display: flex; flex-direction: column; gap: 16px; max-width: 760px;">
+            <div style="border: 1px solid #e4e8e9; border-radius: 9px; padding: 10px 14px; font-size: 13.5px; font-weight: 500; background: #fafbfb;">[HSNL] CTF progress — week 09: 17 of 24 members completed</div>
+            <div style="font-size: 13.5px; line-height: 1.75; color: #2c343a; text-wrap: pretty;">Dear Professor,</div>
+            <div style="font-size: 13.5px; line-height: 1.75; color: #2c343a; text-wrap: pretty;">Here is the CTF progress report for week 09 at High Speed Network Lab. This week's challenge covered <strong style="font-weight: 600;">Web Exploitation</strong> on Root Me, due <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: #f2f5f5; padding: 1px 5px; border-radius: 4px;">2026-08-27 23:59</span>, presented by <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px;">@lehoang</span>.</div>
+            <div style="display: flex; gap: 8px;">
+              <sc-for list="{{ summary }}" as="s" hint-placeholder-count="4">
+                <div style="{{ s.tile }}">
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 19px;">{{ s.count }}</span>
+                  <span style="font-size: 12px; font-weight: 500;">{{ s.short }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="font-size: 13.5px; line-height: 1.75; color: #2c343a; text-wrap: pretty;">The four members who have not submitted were reminded automatically twice. We will follow up with them and report again next week.</div>
+            <div style="font-size: 13.5px; line-height: 1.75; color: #2c343a;">Best regards,<br />Nguyen Trong — Lab Leader</div>
+          </div>
+
+          <div style="border-top: 1px solid #eef1f2; padding: 14px 30px; display: flex; align-items: center; gap: 10px; background: #fff; flex: none;">
+            <span style="display: inline-flex; align-items: center; gap: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #667079;"><span style="width: 22px; height: 22px; border-radius: 5px; background: #e8f5ee; color: #15803d; display: grid; place-items: center; font-size: 9.5px; font-weight: 600;">CSV</span>progress_w09.csv</span>
+            <span style="margin-left: auto; padding: 8px 15px; border-radius: 8px; border: 1px solid #dfe3e5; font-size: 13px; font-weight: 500;">Save draft</span>
+            <span style="padding: 8px 16px; border-radius: 8px; background: #0d7d8f; color: #fff; font-size: 13px; font-weight: 500;">Approve &amp; send</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;cellStyle&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;soft&quot;,&quot;solid&quot;],&quot;default&quot;:&quot;soft&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Progress grid&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;comfortable&quot;,&quot;compact&quot;],&quot;default&quot;:&quot;comfortable&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Progress grid&quot;}}">
+class Component extends DCLogic {
+  get S() {
+    return {
+      E: { key: 'E', label: 'Early', short: 'Early', hint: 'ahead of time', fg: '#1d4ed8', soft: '#e3ecfd', line: '#bed2fa', solid: '#2563eb' },
+      D: { key: 'D', label: 'Done', short: 'Done', hint: 'on time', fg: '#15803d', soft: '#e2f2e9', line: '#b6dfc9', solid: '#16a34a' },
+      L: { key: 'L', label: 'Late', short: 'Late', hint: 'past deadline', fg: '#a16207', soft: '#fbf0d8', line: '#eed9a2', solid: '#d97706' },
+      M: { key: 'M', label: 'Missing', short: 'Missing', hint: 'reminded 2×', fg: '#b91c1c', soft: '#fbe4e2', line: '#f4c3bf', solid: '#dc2626' },
+      '.': { key: '·', label: 'Not due', short: 'Not due', hint: '', fg: '#a9b0b5', soft: '#f4f6f6', line: '#e7eaeb', solid: '#d3d8da' }
+    };
+  }
+
+  get data() {
+    return [
+      ['Nguyen Minh Anh', 'm1nh4nh', 'DEDDEDDDE'],
+      ['Tran Quoc Bao', 'qb40_ctf', 'DDLDDDDDD'],
+      ['Le Hoang', 'lehoang', 'EEDEDEDED'],
+      ['Pham Thu Ha', 'thuha_px', 'DDDDLDDDM'],
+      ['Vu Duc Duy', 'ducduy07', 'DMDDLDMDM'],
+      ['Dang Khanh Linh', 'kl1nh', 'EDDDDDDDD'],
+      ['Hoang Nam Son', 'sonhn', 'DDDMDLDDL'],
+      ['Bui Gia Huy', 'giahuy_b', 'MMDLMDMDM'],
+      ['Ngo Thanh Tung', 'tungngo99', 'DEDDDDDED'],
+      ['Do Phuong Vy', 'vydp', 'DDDDDMDDD'],
+      ['Ly Anh Tuan', 'tuan1y', 'DLMDDDLDL'],
+      ['Trinh Bao Ngoc', 'ngoctb', 'EDEDDEDDD']
+    ];
+  }
+
+  renderVals() {
+    const S = this.S;
+    const rowH = ((this.props.density ?? 'comfortable') === 'compact' ? 34 : 42) + 'px';
+    const solid = (this.props.cellStyle ?? 'soft') === 'solid';
+    const cats = ['Crypto', 'Web', 'Forensic', 'Reverse', 'Web', 'Pwn', 'Network', 'Stego', 'Web'];
+
+    const cellBase = { width: '28px', height: '24px', borderRadius: '6px', display: 'grid', placeItems: 'center', fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', fontWeight: 500 };
+    const chipBase = { width: '17px', height: '17px', borderRadius: '5px', display: 'grid', placeItems: 'center', fontFamily: "'IBM Plex Mono', monospace", fontSize: '9.5px', fontWeight: 600 };
+    const cellStyle = (c) => {
+      const s = S[c];
+      return solid
+        ? { ...cellBase, background: c === '.' ? '#f4f6f6' : s.solid, color: c === '.' ? '#a9b0b5' : '#ffffff' }
+        : { ...cellBase, background: s.soft, border: '1px solid ' + s.line, color: s.fg };
+    };
+
+    const rows = this.data.map((r, i) => {
+      const chars = r[2].split('');
+      const pct = Math.round((chars.filter(c => c === 'D' || c === 'E').length / chars.length) * 100);
+      const bg = i % 2 ? '#fcfdfd' : '#ffffff';
+      return {
+        name: r[0],
+        username: '@' + r[1],
+        initials: r[0].split(' ').slice(-2).map(w => w[0]).join(''),
+        pct: pct + '%',
+        rowStyle: { display: 'grid', gridTemplateColumns: '210px 148px', height: rowH, borderBottom: '1px solid #f2f4f5', background: bg },
+        gridStyle: { display: 'grid', gridTemplateColumns: 'repeat(9, minmax(0, 1fr)) 118px', height: rowH, borderBottom: '1px solid #f2f4f5', background: bg },
+        barStyle: { display: 'block', height: '4px', width: pct + '%', background: pct >= 80 ? '#16a34a' : pct >= 60 ? '#d97706' : '#dc2626' },
+        cells: chars.map(c => ({ label: S[c].key, style: cellStyle(c) }))
+      };
+    });
+
+    const pill = (c) => ({ justifySelf: 'end', fontSize: '11.5px', fontWeight: 500, padding: '3px 9px', borderRadius: '6px', background: S[c].soft, color: S[c].fg });
+
+    return {
+      rows,
+      weeks: cats.map((c, i) => ({ code: 'W' + String(i + 1).padStart(2, '0'), cat: c })),
+      legend: ['E', 'D', 'L', 'M', '.'].map(c => ({ key: S[c].key, label: S[c].label, chip: { ...chipBase, background: S[c].soft, border: '1px solid ' + S[c].line, color: S[c].fg } })),
+      summary: ['E', 'D', 'L', 'M'].map((c, i) => ({
+        label: S[c].label,
+        short: S[c].short,
+        hint: S[c].hint,
+        count: ['6', '11', '3', '4'][i],
+        dot: { width: '9px', height: '9px', borderRadius: '3px', background: S[c].solid, flex: 'none' },
+        tile: { flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', padding: '12px 14px', borderRadius: '9px', background: S[c].soft, color: S[c].fg }
+      })),
+      attention: [
+        { name: 'Bui Gia Huy', username: '@giahuy_b', note: 'reminded twice · 08-22, 08-23', status: 'Missing', pill: pill('M') },
+        { name: 'Vu Duc Duy', username: '@ducduy07', note: 'no platform account linked', status: 'Missing', pill: pill('M') },
+        { name: 'Pham Thu Ha', username: '@thuha_px', note: 'presenter for week 10', status: 'Missing', pill: pill('M') },
+        { name: 'Ly Anh Tuan', username: '@tuan1y', note: '14h after the week 08 deadline', status: 'Late', pill: pill('L') },
+        { name: 'Hoang Nam Son', username: '@sonhn', note: '3h late · detected by auto sync', status: 'Late', pill: pill('L') }
+      ],
+      jobs: [
+        { name: 'Platform sync', meta: '06:00 · 24/24', dot: { width: '6px', height: '6px', borderRadius: '50%', background: '#16a34a', flex: 'none' } },
+        { name: 'Deadline reminders', meta: '08:00 · 7 sent', dot: { width: '6px', height: '6px', borderRadius: '50%', background: '#16a34a', flex: 'none' } },
+        { name: 'Weekly report', meta: '07:00 · drafted', dot: { width: '6px', height: '6px', borderRadius: '50%', background: '#d97706', flex: 'none' } }
+      ],
+      drafts: [
+        { title: 'Week 09', time: '07:00', badge: 'Pending approval', badgeStyle: { alignSelf: 'flex-start', fontSize: '11px', fontWeight: 500, padding: '2px 8px', borderRadius: '5px', background: '#fbf0d8', color: '#a16207' }, itemStyle: { padding: '13px 16px', borderBottom: '1px solid #f2f4f5', display: 'flex', flexDirection: 'column', gap: '6px', background: '#ffffff', borderLeft: '2px solid #0d7d8f' } },
+        { title: 'Week 08', time: '08-17', badge: 'Pending approval', badgeStyle: { alignSelf: 'flex-start', fontSize: '11px', fontWeight: 500, padding: '2px 8px', borderRadius: '5px', background: '#fbf0d8', color: '#a16207' }, itemStyle: { padding: '13px 16px', borderBottom: '1px solid #f2f4f5', display: 'flex', flexDirection: 'column', gap: '6px', borderLeft: '2px solid transparent' } },
+        { title: 'Week 07', time: '08-10', badge: 'Sent', badgeStyle: { alignSelf: 'flex-start', fontSize: '11px', fontWeight: 500, padding: '2px 8px', borderRadius: '5px', background: '#e2f2e9', color: '#15803d' }, itemStyle: { padding: '13px 16px', borderBottom: '1px solid #f2f4f5', display: 'flex', flexDirection: 'column', gap: '6px', borderLeft: '2px solid transparent' } },
+        { title: 'Week 06', time: '08-03', badge: 'Sent', badgeStyle: { alignSelf: 'flex-start', fontSize: '11px', fontWeight: 500, padding: '2px 8px', borderRadius: '5px', background: '#e2f2e9', color: '#15803d' }, itemStyle: { padding: '13px 16px', borderBottom: '1px solid #f2f4f5', display: 'flex', flexDirection: 'column', gap: '6px', borderLeft: '2px solid transparent' } },
+        { title: 'Week 05', time: '07-27', badge: 'Sent', badgeStyle: { alignSelf: 'flex-start', fontSize: '11px', fontWeight: 500, padding: '2px 8px', borderRadius: '5px', background: '#e2f2e9', color: '#15803d' }, itemStyle: { padding: '13px 16px', borderBottom: '1px solid #f2f4f5', display: 'flex', flexDirection: 'column', gap: '6px', borderLeft: '2px solid transparent' } }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

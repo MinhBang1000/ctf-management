@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    @keyframes toastIn { from { opacity:0; transform:translateY(8px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes scaleIn { from { opacity:0; transform:scale(.96); } to { opacity:1; transform:scale(1); } }
+    * { box-sizing: border-box; }
+    body { margin:0; }
+    ::selection { background: rgba(52,211,153,.3); }
+  </style>
+</helmet>
+
+<sc-if value="{{ showLogin }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100vh; display:flex; align-items:center; justify-content:center; background:{{ t.bg }}; font-family:'Manrope',sans-serif; position:relative; overflow:hidden; transition:background .3s ease;">
+  <div style="position:absolute; inset:0; background-image:linear-gradient({{ t.gridLine }} 1px, transparent 1px), linear-gradient(90deg, {{ t.gridLine }} 1px, transparent 1px); background-size:42px 42px; opacity:.5;"></div>
+  <button onClick="{{ goToApp }}" style="position:absolute; top:20px; right:20px; font-family:'JetBrains Mono',monospace; font-size:12px; padding:8px 14px; border-radius:8px; border:1px solid {{ t.border }}; background:{{ t.surface }}; color:{{ t.muted }}; cursor:pointer; z-index:2;">← back to app preview</button>
+  <div style="position:relative; z-index:1; width:380px; background:{{ t.surface }}; border:1px solid {{ t.border }}; border-radius:14px; padding:36px 32px; box-shadow:0 20px 60px rgba(0,0,0,.25); animation:scaleIn .35s ease;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:28px;">
+      <div style="width:34px; height:34px; border-radius:8px; background:{{ t.accent }}; display:flex; align-items:center; justify-content:center; color:{{ t.accentFg }}; font-family:'JetBrains Mono',monospace; font-weight:700;">&gt;_</div>
+      <div style="font-weight:800; font-size:17px; color:{{ t.fg }}; letter-spacing:-.01em;">HSLab <span style="color:{{ t.muted }}; font-weight:600;">CTF</span></div>
+    </div>
+    <div style="display:flex; gap:4px; padding:3px; background:{{ t.bg }}; border:1px solid {{ t.border }}; border-radius:9px; margin-bottom:22px;">
+      <button onClick="{{ setLoginTabLab }}" style="{{ loginTabLabStyle }}">Lab sign in</button>
+      <button onClick="{{ setLoginTabRoot }}" style="{{ loginTabRootStyle }}">Root access</button>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div>
+        <label style="display:block; font-size:12px; font-weight:600; color:{{ t.muted }}; margin-bottom:6px;">Email</label>
+        <input type="email" placeholder="leader@hslab.dev" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid {{ t.border }}; background:{{ t.bg }}; color:{{ t.fg }}; font-family:'Manrope',sans-serif; font-size:14px; outline:none;" />
+      </div>
+      <div>
+        <label style="display:block; font-size:12px; font-weight:600; color:{{ t.muted }}; margin-bottom:6px;">Password</label>
+        <input type="password" placeholder="••••••••" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid {{ t.border }}; background:{{ t.bg }}; color:{{ t.fg }}; font-family:'Manrope',sans-serif; font-size:14px; outline:none;" />
+      </div>
+      <button onClick="{{ demoLogin }}" style="margin-top:6px; padding:11px; border-radius:8px; border:none; background:{{ t.accent }}; color:{{ t.accentFg }}; font-weight:700; font-size:14px; cursor:pointer; transition:filter .15s ease, transform .1s ease;" style-hover="filter:brightness(1.08);" style-active="transform:scale(.98);">Sign in →</button>
+    </div>
+    <div style="margin-top:18px; text-align:center; font-size:12px; color:{{ t.muted }}; font-family:'JetBrains Mono',monospace;">{{ loginModeHint }}</div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ showApp }}" hint-placeholder-val="{{ true }}">
+<div style="min-height:100vh; display:flex; background:{{ t.bg }}; color:{{ t.fg }}; font-family:'Manrope',sans-serif; transition:background .3s ease, color .3s ease;">
+
+  <!-- Mobile overlay backdrop -->
+  <sc-if value="{{ mobileNavOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeMobileNav }}" style="position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:30; animation:fadeUp .2s ease;"></div>
+  </sc-if>
+
+  <!-- Sidebar -->
+  <aside style="{{ sidebarStyle }}">
+    <div style="display:flex; align-items:center; gap:10px; padding:{{ sidebarPad }}; height:60px; border-bottom:1px solid {{ t.border }}; flex-shrink:0;">
+      <div style="width:30px; height:30px; min-width:30px; border-radius:7px; background:{{ t.accent }}; display:flex; align-items:center; justify-content:center; color:{{ t.accentFg }}; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:14px;">&gt;_</div>
+      <sc-if value="{{ showSidebarLabel }}" hint-placeholder-val="{{ true }}">
+        <div style="overflow:hidden; white-space:nowrap;">
+          <div style="font-weight:800; font-size:14.5px; letter-spacing:-.01em; line-height:1.1;">HSLab CTF</div>
+          <div style="font-size:11px; color:{{ t.muted }}; font-family:'JetBrains Mono',monospace;">{{ tenantLabel }}</div>
+        </div>
+      </sc-if>
+    </div>
+
+    <nav style="flex:1; overflow-y:auto; padding:14px 10px; display:flex; flex-direction:column; gap:2px;">
+      <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="8">
+        <button onClick="{{ item.onClick }}" style="{{ item.style }}" style-hover="{{ item.hoverStyle }}">
+          <span style="width:20px; height:20px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">{{ item.icon }}</span>
+          <sc-if value="{{ showSidebarLabel }}" hint-placeholder-val="{{ true }}">
+            <span style="flex:1; text-align:left; white-space:nowrap; overflow:hidden;">{{ item.label }}</span>
+          </sc-if>
+        </button>
+      </sc-for>
+
+      <div style="height:1px; background:{{ t.border }}; margin:10px 4px;"></div>
+
+      <button onClick="{{ goConsole }}" style="{{ consoleNavStyle }}" style-hover="{{ consoleHoverStyle }}">
+        <span style="width:20px; height:20px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">{{ icons.terminal }}</span>
+        <sc-if value="{{ showSidebarLabel }}" hint-placeholder-val="{{ true }}">
+          <span style="flex:1; text-align:left; white-space:nowrap; overflow:hidden;">Admin Console</span>
+        </sc-if>
+        <sc-if value="{{ showSidebarLabel }}" hint-placeholder-val="{{ true }}">
+          <span style="font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:700; padding:2px 6px; border-radius:5px; background:{{ t.rootBadgeBg }}; color:{{ t.rootBadgeFg }}; letter-spacing:.04em;">ROOT</span>
+        </sc-if>
+      </button>
+    </nav>
+
+    <div style="padding:12px; border-top:1px solid {{ t.border }}; display:flex; align-items:center; gap:10px; flex-shrink:0;">
+      <div style="width:30px; height:30px; min-width:30px; border-radius:8px; background:{{ t.surfaceHover }}; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12px; color:{{ t.accent }};">TL</div>
+      <sc-if value="{{ showSidebarLabel }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1; overflow:hidden;">
+          <div style="font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Trần Lâm</div>
+          <div style="font-size:11px; color:{{ t.muted }};">Lab Leader</div>
+        </div>
+      </sc-if>
+      <button onClick="{{ goToLogin }}" title="Sign out" style="width:28px; height:28px; border-radius:7px; border:none; background:transparent; color:{{ t.muted }}; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;" style-hover="background:{{ t.surfaceHover }}; color:{{ t.fg }};">{{ icons.logout }}</button>
+    </div>
+
+    <button onClick="{{ toggleSidebar }}" style="position:absolute; top:52px; right:-11px; width:22px; height:22px; border-radius:50%; border:1px solid {{ t.border }}; background:{{ t.surface }}; color:{{ t.muted }}; cursor:pointer; display:{{ collapseBtnDisplay }}; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,.15);">{{ collapseIcon }}</button>
+  </aside>
+
+  <!-- Main column -->
+  <div style="flex:1; min-width:0; display:flex; flex-direction:column; height:100vh; overflow:hidden;">
+
+    <!-- Topbar -->
+    <header style="height:60px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 20px; border-bottom:1px solid {{ t.border }}; background:{{ t.surface }};">
+      <button onClick="{{ openMobileNav }}" style="width:34px; height:34px; border-radius:8px; border:1px solid {{ t.border }}; background:transparent; color:{{ t.fg }}; cursor:pointer; align-items:center; justify-content:center; display:{{ hamburgerDisplay }}; flex-shrink:0;">{{ icons.menu }}</button>
+
+      <div style="font-weight:700; font-size:15px; display:flex; align-items:center; gap:8px; white-space:nowrap;">{{ pageTitle }} <sc-if value="{{ isConsolePage }}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:700; padding:2px 7px; border-radius:5px; background:{{ t.rootBadgeBg }}; color:{{ t.rootBadgeFg }};">SYSTEM SCOPE</span></sc-if></div>
+
+      <button onClick="{{ openCommand }}" style="margin-left:auto; display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:9px; border:1px solid {{ t.border }}; background:{{ t.bg }}; color:{{ t.muted }}; cursor:pointer; font-family:'Manrope',sans-serif; font-size:13px; width:220px;" style-hover="border-color:{{ t.accent }};">
+        <span style="width:16px; height:16px; display:flex;">{{ icons.search }}</span>
+        <span style="flex:1; text-align:left;">Search or jump to…</span>
+        <span style="font-family:'JetBrains Mono',monospace; font-size:10px; border:1px solid {{ t.border }}; border-radius:4px; padding:1px 5px;">⌘K</span>
+      </button>
+
+      <button onClick="{{ toggleTheme }}" title="Toggle theme" style="width:34px; height:34px; border-radius:8px; border:1px solid {{ t.border }}; background:transparent; color:{{ t.fg }}; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:transform .3s ease;" style-hover="background:{{ t.surfaceHover }};">{{ themeIcon }}</button>
+
+      <div style="position:relative; flex-shrink:0;">
+        <button onClick="{{ toggleBell }}" title="Notifications" style="width:34px; height:34px; border-radius:8px; border:1px solid {{ t.border }}; background:transparent; color:{{ t.fg }}; cursor:pointer; display:flex; align-items:center; justify-content:center; position:relative;" style-hover="background:{{ t.surfaceHover }};">
+          {{ icons.bell }}
+          <span style="position:absolute; top:6px; right:6px; width:7px; height:7px; border-radius:50%; background:{{ t.statusLateText }}; border:1.5px solid {{ t.surface }};"></span>
+        </button>
+        <sc-if value="{{ bellOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute; top:42px; right:0; width:300px; background:{{ t.surface }}; border:1px solid {{ t.border }}; border-radius:12px; box-shadow:0 16px 40px rgba(0,0,0,.2); z-index:40; overflow:hidden; animation:fadeUp .18s ease;">
+            <div style="padding:12px 14px; font-size:12.5px; font-weight:700; border-bottom:1px solid {{ t.border }};">Notifications</div>
+            <div style="padding:12px 14px; border-bottom:1px solid {{ t.border }}; display:flex; gap:10px;">
+              <span style="width:7px; height:7px; margin-top:5px; border-radius:50%; background:{{ t.statusLateText }}; flex-shrink:0;"></span>
+              <div><div style="font-size:12.5px; font-weight:600;">Deadline T-1: "Buffer Overflow 101"</div><div style="font-size:11.5px; color:{{ t.muted }}; margin-top:2px;">4 members haven't submitted · due tomorrow</div></div>
+            </div>
+            <div style="padding:12px 14px; display:flex; gap:10px;">
+              <span style="width:7px; height:7px; margin-top:5px; border-radius:50%; background:{{ t.accent }}; flex-shrink:0;"></span>
+              <div><div style="font-size:12.5px; font-weight:600;">Weekly report ready to review</div><div style="font-size:11.5px; color:{{ t.muted }}; margin-top:2px;">Draft generated · awaiting approval</div></div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </header>
+
+    <!-- Page content -->
+    <main style="flex:1; overflow-y:auto; padding:28px 32px 60px;">
+      <div style="max-width:1560px; margin:0 auto;">
+
+        <sc-if value="{{ showOverview }}" hint-placeholder-val="{{ true }}">
+          <div style="animation:fadeUp .25s ease;">
+            <div style="display:flex; align-items:center; justify-content:between; gap:12px; margin-bottom:20px;">
+              <div>
+                <h1 style="font-size:22px; font-weight:800; margin:0 0 4px; letter-spacing:-.01em;">Overview</h1>
+                <div style="font-size:13.5px; color:{{ t.muted }};">Fall 2026 semester · Root Me focus platform</div>
+              </div>
+              <button onClick="{{ demoSync }}" style="margin-left:auto; display:flex; align-items:center; gap:8px; padding:9px 16px; border-radius:9px; border:1px solid {{ t.border }}; background:{{ t.surface }}; color:{{ t.fg }}; font-weight:600; font-size:13px; cursor:pointer;" style-hover="border-color:{{ t.accent }}; color:{{ t.accent }};">
+                <span style="width:15px; height:15px; display:flex; animation:{{ syncSpin }};">{{ icons.refresh }}</span> {{ syncLabel }}
+              </button>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:22px;">
+              <sc-for list="{{ statCards }}" as="card" hint-placeholder-count="4">
+                <div style="background:{{ t.surface }}; border:1px solid {{ t.border }}; border-radius:12px; padding:16px 18px; transition:transform .15s ease, border-color .15s ease;" style-hover="transform:translateY(-2px); border-color:{{ t.accent }};">
+                  <div style="font-size:12px; color:{{ t.muted }}; font-weight:600; margin-bottom:8px;">{{ card.label }}</div>
+                  <div style="font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:700;">{{ card.value }}</div>
+                  <div style="font-size:11.5px; color:{{ card.deltaColor }}; margin-top:4px; font-weight:600;">{{ card.delta }}</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1.4fr 1fr; gap:14px; align-items:start;">
+              <div style="background:{{ t.surface }}; border:1px solid {{ t.border }}; border-radius:12px; padding:20px;">
+                <div style="font-weight:700; font-size:14px; margin-bottom:14px;">Status breakdown — this semester</div>
+                <div style="display:flex; height:14px; border-radius:7px; overflow:hidden; background:{{ t.bg }};">
+                  <div style="width:22%; background:{{ t.statusEarlyText }};"></div>
+                  <div style="width:41%; background:{{ t.statusDoneText }};"></div>
+                  <div style="width:15%; background:{{ t.statusLateText }};"></div>
+                  <div style="width:22%; background:{{ t.statusMissingText }};"></div>
+                </div>
+                <div style="display:flex; gap:18px; margin-top:14px; flex-wrap:wrap;">
+                  <sc-for list="{{ legendItems }}" as="lg" hint-placeholder-count="4">
+                    <div style="display:flex; align-items:center; gap:6px; font-size:12.5px; color:{{ t.muted }};"><span style="width:8px; height:8px; border-radius:2px; background:{{ lg.color }};"></span>{{ lg.label }} <span style="font-family:'JetBrains Mono',monospace; color:{{ t.fg }}; font-weight:600;">{{ lg.pct }}</span></div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div style="background:{{ t.surface }}; border:1px solid {{ t.statusLateText }}; border-radius:12px; padding:14px 16px;">
+                  <div style="font-weight:700; font-size:13px; margin-bottom:4px;">⚠ 4 members need a nudge</div>
+                  <div style="font-size:12px; color:{{ t.muted }};">"Buffer Overflow 101" deadline in 1 day</div>
+                </div>
+                <div style="background:{{ t.surface }}; border:1px solid {{ t.border }}; border-radius:12px; padding:14px 16px;">
+                  <div style="font-weight:700; font-size:13px; margin-bottom:4px;">Weekly report drafted</div>
+                  <div style="font-size:12px; color:{{ t.muted }}; margin-bottom:10px;">Ready for review — Reports page</div>
+                  <button onClick="{{ goReports }}" style="font-size:12px; font-weight:700; color:{{ t.accent }}; background:none; border:none; cursor:pointer; padding:0;">Review draft →</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showMembers }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .25s ease;">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+              <div><h1 style="font-size:22px; font-weight:800; margin:0 0 4px; letter-spacing:-.01em;">Members</h1><div style="font-size:13.5px; color:{{ t.muted }};">24 members in HSLab Core</div></div>
+              <button onClick="{{ addMember }}" style="margin-left:auto; padding:9px 16px; border-radius:9px; border:none; background:{{ t.accent }}; color:{{ t.accentFg }}; font-weight:700; font-size:13px; cursor:pointer;" style-hover="filter:brightness(1.08);">+ New member</button>
+            </div>
+            <div style="background:{{ t.surface }}; border:1px solid {{ t.border }}; border-radius:12px; overflow:hidden;">
+              <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead>
+                  <tr style="background:{{ t.bg }};">
+                    <sc-for list="{{ memberCols }}" as="col" hint-placeholder-count="5"><th style="text-align:left; padding:11px 16px; font-size:11.5px; font-weight:700; color:{{ t.muted }}; text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid {{ t.border }};">{{ col }}</th></sc-for>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{ members }}" as="m" hint-placeholder-count="6">
+                    <tr style="border-bottom:1px solid {{ t.border }}; transition:background .12s ease;" style-hover="background:{{ t.surfaceHover }};">
+                      <td style="padding:12px 16px; display:flex; align-items:center; gap:10px;">
+                        <span style="width:26px; height:26px; border-radius:7px; background:{{ t.bg }}; border:1px solid {{ t.border }}; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; color:{{ t.accent }};">{{ m.initials }}</span>
+                        {{ m.name }}
+                      </td>
+                      <td style="padding:12px 16px; color:{{ t.muted }};">{{ m.email }}</td>
+                      <td style="padding:12px 16px;"><span style="font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:20px; background:{{ t.bg }}; border:1px solid {{ t.border }};">{{ m.role }}</span></td>
+                      <td style="padding:12px 16px; font-family:'JetBrains Mono',monospace; color:{{ t.muted }};">{{ m.externalId }}</td>
+                      <td style="padding:12px 16px; text-align:right;">
+                        <button onClick="{{ m.onEdit }}" style="font-size:12px; font-weight:600; color:{{ t.muted }}; background:none; border:none; cursor:pointer;" style-hover="color:{{ t.accent }};">Edit</button>
+                      </td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showSemesters }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .25s ease;">
+            <div style="margin-bottom:20px;"><h1 style="font-size:22px; font-weight:800; margin:0 0 4px; letter-spacing:-.01em;">Semesters</h1><div style="font-size:13.5px; color:{{ t.muted }};">Fall 2026 is the active semester</div></div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px;">
+              <sc-for list="{{ semesters }}" as="s" hint-placeholder-count="3">
+                <div style="background:{{ t.surface }}; border:1px solid {{ t.border }}; border-radius:12px; padding:18px;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+                    <div style="font-weight:700; font-size:14.5px;">{{ s.name }}</div>
+                    <span style="font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; background:{{ s.badgeBg }}; color:{{ s.badgeText }};">{{ s.status }}</span>
+                  </div>
+                  <div style="font-size:12.5px; color:{{ t.muted }}; margin-bottom:16px;">{{ s.range }}</div>
+                  <button onClick="{{ s.onGenerate }}" style="width:100%; padding:9px; border-radius:8px; border:1px solid {{ t.border }}; background:{{ t.bg }}; color:{{ t.fg }}; font-weight:600; font-size:12.5px; cursor:pointer;" style-hover="border-color:{{ t.accent }}; color:{{ t.accent }};">Generate Report</button>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showChallenges }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .25s ease;">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+              <div><h1 style="font-size:22px; font-weight:800; margin:0 0 4px; letter-spacing:-.01em;">Challenges</h1><div style="font-size:13.5px; color:{{ t.muted }};">18 challenges across the active semester</div></div>
+              <button onClick="{{ addChallenge }}" style="margin-left:auto; padding:9px 16px; border-radius:9px; border:none; background:{{ t.accent }}; color:{{ t.accentFg }}; font-weight:700; font-size:13px; cursor:pointer;" style-hover="filter:brightness(1.08);">+ New challenge</button>
+            </div>
+            <div style="background:{{ t.surface }}; border:1px solid {{ t.border }}; border-radius:12px; overflow:hidden;">
+              <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead><tr style="background:{{ t.bg }};"><sc-for list="{{ challengeCols }}" as="col" hint-placeholder-count="5"><th style="text-align:left; padding:11px 16px; font-size:11.5px; font-weight:700; color:{{ t.muted }}; text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid {{ t.border }};">{{ col }}</th></sc-for></tr></thead>
+                <tbody>
+                  <sc-for list="{{ challenges }}" as="c" hint-placeholder-count="6">
+                    <tr style="border-bottom:1px solid {{ t.border }};" style-hover="background:{{ t.surfaceHover }};">
+                      <td style="padding:12px 16px; font-weight:600;">{{ c.name }}</td>
+                      <td style="padding:12px 16px; font-family:'JetBrains Mono',monospace; color:{{ t.muted }};">W{{ c.week }}</td>
+                      <td style="padding:12px 16px;"><span style="font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:20px; background:{{ t.bg }}; border:1px solid {{ t.border }};">{{ c.platform }}</span></td>
+                      <td style="padding:12px 16px; color:{{ t.muted }};">{{ c.deadline }}</td>
+                      <td style="padding:12px 16px; font-family:'JetBrains Mono',monospace; font-weight:700; text-align:right;">{{ c.points }} pts</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showProgress }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .25s ease;">
+            <div style="margin-bottom:20px;"><h1 style="font-size:22px; font-weight:800; margin:0 0 4px; letter-spacing:-.01em;">Progress</h1><div style="font-size:13.5px; color:{{ t.muted }};">Filterable by semester and challenge</div></div>
+            <div style="background:{{ t.surface }}; border:1px solid {{ t.border }}; border-radius:12px; overflow:hidden;">
+              <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead><tr style="background:{{ t.bg }};"><sc-for list="{{ progressCols }}" as="col" hint-placeholder-count="4"><th style="text-align:left; padding:11px 16px; font-size:11.5px; font-weight:700; color:{{ t.muted }}; text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid {{ t.border }};">{{ col }}</th></sc-for></tr></thead>
+                <tbody>
+                  <sc-for list="{{ progressRows }}" as="p" hint-placeholder-count="7">
+                    <tr style="border-bottom:1px solid {{ t.border }};" style-hover="background:{{ t.surfaceHover }};">
+                      <td style="padding:12px 16px; font-weight:600;">{{ p.member }}</td>
+                      <td style="padding:12px 16px; color:{{ t.muted }};">{{ p.challenge }}</td>
+                      <td style="padding:12px 16px;"><span style="font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:20px; background:{{ p.statusBg }}; color:{{ p.statusColor }};">{{ p.statusLabel }}</span></td>
+                      <td style="padding:12px 16px; font-family:'JetBrains Mono',monospace; color:{{ t.muted }};">{{ p.date }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showPlatforms }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .25s ease;">
+            <div style="margin-bottom:20px;"><h1 style="font-size:22px; font-weight:800; margin:0 0 4px; letter-spacing:-.01em;">Platforms</h1><div style="font-size:13.5px; color:{{ t.muted }};">Credentials and sync status per platform</div></div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px;">
+              <sc-for list="{{ platforms }}" as="pl" hint-placeholder-count="2">
+                <div style="background:{{ t.surface }}; border:1px solid {{ t.border }}; border-radius:12px; padding:18px;">
+                  <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                    <span style="width:34px; height:34px; border-radius:8px; background:{{ t.bg }}; border:1px solid {{ t.border }}; display:flex; align-items:center; justify-content:center;">{{ icons.link }}</span>
+                    <div style="flex:1;">
+                      <div style="font-weight:700; font-size:14px;">{{ pl.name }}</div>
+                      <div style="font-size:11.5px; color:{{ pl.connColor }}; font-weight:600;">{{ pl.connLabel }}</div>
+                    </div>
+                    <sc-if value="{{ pl.isFocus }}" hint-placeholder-val="{{ false }}"><span style="font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:20px; background:{{ t.accent }}; color:{{ t.accentFg }};">FOCUS</span></sc-if>
+                  </div>
+                  <div style="font-size:12px; color:{{ t.muted }}; margin-bottom:14px;">Last sync: {{ pl.lastSync }}</div>
+                  <button onClick="{{ demoSync }}" style="width:100%; padding:9px; border-radius:8px; border:1px solid {{ t.border }}; background:{{ t.bg }}; color:{{ t.fg }}; font-weight:600; font-size:12.5px; cursor:pointer;" style-hover="border-color:{{ t.accent }}; color:{{ t.accent }};">Sync now</button>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showReports }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .25s ease;">
+            <div style="margin-bottom:20px;"><h1 style="font-size:22px; font-weight:800; margin:0 0 4px; letter-spacing:-.01em;">Reports</h1><div style="font-size:13.5px; color:{{ t.muted }};">Weekly and semester reports, draft to sent</div></div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <sc-for list="{{ reports }}" as="r" hint-placeholder-count="3">
+                <div style="background:{{ t.surface }}; border:1px solid {{ t.border }}; border-radius:12px; padding:16px 18px; display:flex; align-items:center; gap:14px;">
+                  <span style="width:36px; height:36px; border-radius:8px; background:{{ t.bg }}; border:1px solid {{ t.border }}; display:flex; align-items:center; justify-content:center; flex-shrink:0;">{{ icons.file }}</span>
+                  <div style="flex:1;">
+                    <div style="font-weight:700; font-size:13.5px;">{{ r.title }}</div>
+                    <div style="font-size:12px; color:{{ t.muted }};">{{ r.period }}</div>
+                  </div>
+                  <span style="font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; background:{{ r.badgeBg }}; color:{{ r.badgeText }};">{{ r.status }}</span>
+                  <button onClick="{{ r.onExport }}" style="display:flex; align-items:center; gap:6px; padding:7px 12px; border-radius:8px; border:1px solid {{ t.border }}; background:{{ t.bg }}; color:{{ t.fg }}; font-size:12px; font-weight:600; cursor:pointer;" style-hover="border-color:{{ t.accent }}; color:{{ t.accent }};"><span style="width:13px; height:13px; display:flex;">{{ icons.download }}</span>Export</button>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showSettings }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .25s ease; max-width:640px;">
+            <div style="margin-bottom:20px;"><h1 style="font-size:22px; font-weight:800; margin:0 0 4px; letter-spacing:-.01em;">Settings</h1><div style="font-size:13.5px; color:{{ t.muted }};">SMTP configuration for this Lab</div></div>
+            <div style="background:{{ t.surface }}; border:1px solid {{ t.border }}; border-radius:12px; padding:22px; display:flex; flex-direction:column; gap:16px;">
+              <div style="font-weight:700; font-size:14px;">SMTP configuration</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                <div><label style="display:block; font-size:12px; font-weight:600; color:{{ t.muted }}; margin-bottom:6px;">Host</label><input placeholder="smtp.gmail.com" style="width:100%; padding:9px 11px; border-radius:8px; border:1px solid {{ t.border }}; background:{{ t.bg }}; color:{{ t.fg }}; font-size:13px; outline:none;" /></div>
+                <div><label style="display:block; font-size:12px; font-weight:600; color:{{ t.muted }}; margin-bottom:6px;">Port</label><input placeholder="587" style="width:100%; padding:9px 11px; border-radius:8px; border:1px solid {{ t.border }}; background:{{ t.bg }}; color:{{ t.fg }}; font-size:13px; outline:none;" /></div>
+              </div>
+              <div style="display:flex; gap:10px;">
+                <button onClick="{{ demoSaveSettings }}" style="padding:9px 16px; border-radius:8px; border:none; background:{{ t.accent }}; color:{{ t.accentFg }}; font-weight:700; font-size:12.5px; cursor:pointer;">Save</button>
+                <button onClick="{{ demoTestEmail }}" style="padding:9px 16px; border-radius:8px; border:1px solid {{ t.border }}; background:transparent; color:{{ t.fg }}; font-weight:600; font-size:12.5px; cursor:pointer;">Send test email</button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showConsole }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .25s ease;">
+            <div style="margin-bottom:20px;">
+              <h1 style="font-size:22px; font-weight:800; margin:0 0 4px;">System Console</h1>
+              <div style="font-size:13.5px; color:{{ t.muted }};">Whole-system scope — every Lab</div>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:18px;">
+              <sc-for list="{{ consoleStats }}" as="card" hint-placeholder-count="3">
+                <div style="background:{{ t.surface }}; border:1px solid {{ t.border }}; border-radius:12px; padding:16px 18px;">
+                  <div style="font-size:12px; color:{{ t.muted }}; font-weight:600; margin-bottom:8px;">{{ card.label }}</div>
+                  <div style="font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:700;">{{ card.value }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background:{{ t.surface }}; border:1px solid {{ t.statusLateText }}; border-radius:12px; padding:14px 16px; margin-bottom:18px;">
+              <div style="font-weight:700; font-size:13px; margin-bottom:4px;">⚠ Labs needing attention</div>
+              <div style="font-size:12px; color:{{ t.muted }};">CyberSec Club — focus platform has no credentials configured</div>
+            </div>
+            <div style="background:{{ t.surface }}; border:1px solid {{ t.border }}; border-radius:12px; overflow:hidden;">
+              <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead><tr style="background:{{ t.bg }};"><sc-for list="{{ labCols }}" as="col" hint-placeholder-count="4"><th style="text-align:left; padding:11px 16px; font-size:11.5px; font-weight:700; color:{{ t.muted }}; text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid {{ t.border }};">{{ col }}</th></sc-for></tr></thead>
+                <tbody>
+                  <sc-for list="{{ labs }}" as="lab" hint-placeholder-count="4">
+                    <tr style="border-bottom:1px solid {{ t.border }};" style-hover="background:{{ t.surfaceHover }};">
+                      <td style="padding:12px 16px; font-weight:600;">{{ lab.name }}</td>
+                      <td style="padding:12px 16px; color:{{ t.muted }};">{{ lab.members }}</td>
+                      <td style="padding:12px 16px;"><span style="font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:20px; background:{{ lab.badgeBg }}; color:{{ lab.badgeText }};">{{ lab.status }}</span></td>
+                      <td style="padding:12px 16px; font-family:'JetBrains Mono',monospace; color:{{ t.muted }};">{{ lab.created }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Command palette -->
+  <sc-if value="{{ commandOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeCommand }}" style="position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:50; display:flex; align-items:flex-start; justify-content:center; padding-top:14vh; animation:fadeUp .15s ease;">
+      <div onClick="{{ stopProp }}" style="width:560px; max-width:90vw; background:{{ t.surface }}; border:1px solid {{ t.border }}; border-radius:14px; box-shadow:0 30px 80px rgba(0,0,0,.4); overflow:hidden; animation:scaleIn .15s ease;">
+        <div style="display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid {{ t.border }};">
+          <span style="width:16px; height:16px; color:{{ t.muted }}; display:flex;">{{ icons.search }}</span>
+          <input autoFocus="{{ true }}" value="{{ commandQuery }}" onChange="{{ onCommandChange }}" placeholder="Jump to a page…" style="flex:1; border:none; outline:none; background:transparent; color:{{ t.fg }}; font-size:14.5px; font-family:'Manrope',sans-serif;" />
+          <span style="font-family:'JetBrains Mono',monospace; font-size:10px; color:{{ t.muted }}; border:1px solid {{ t.border }}; border-radius:4px; padding:1px 5px;">ESC</span>
+        </div>
+        <div style="max-height:320px; overflow-y:auto; padding:8px;">
+          <sc-for list="{{ commandResults }}" as="r" hint-placeholder-count="6">
+            <button onClick="{{ r.onClick }}" style="width:100%; display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:9px; border:none; background:transparent; color:{{ t.fg }}; cursor:pointer; font-size:13.5px; font-weight:600; text-align:left;" style-hover="background:{{ t.surfaceHover }};">
+              <span style="width:18px; height:18px; display:flex; color:{{ t.muted }};">{{ r.icon }}</span>{{ r.label }}
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Toasts -->
+  <div style="position:fixed; bottom:20px; right:20px; z-index:60; display:flex; flex-direction:column-reverse; gap:10px; width:320px;">
+    <sc-for list="{{ toasts }}" as="tst" hint-placeholder-count="0">
+      <div style="background:{{ t.surface }}; border:1px solid {{ tst.borderColor }}; border-left:3px solid {{ tst.borderColor }}; border-radius:10px; padding:12px 14px; box-shadow:0 10px 30px rgba(0,0,0,.25); display:flex; align-items:flex-start; gap:10px; animation:toastIn .25s cubic-bezier(.2,.8,.2,1);">
+        <span style="width:16px; height:16px; color:{{ tst.borderColor }}; flex-shrink:0; margin-top:1px; display:flex;">{{ tst.icon }}</span>
+        <div style="flex:1; font-size:13px; font-weight:600;">{{ tst.message }}</div>
+        <button onClick="{{ tst.onDismiss }}" style="background:none; border:none; color:{{ t.muted }}; cursor:pointer; width:16px; height:16px; display:flex; flex-shrink:0;">{{ icons.x }}</button>
+      </div>
+    </sc-for>
+  </div>
+
+</div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+function svg(children, extra) {
+  var props = Object.assign({ width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.75, strokeLinecap: 'round', strokeLinejoin: 'round' }, extra || {});
+  return React.createElement('svg', props, children);
+}
+var E = React.createElement;
+
+class Component extends DCLogic {
+  state = {
+    theme: 'dark',
+    page: 'overview',
+    view: 'app',
+    sidebarCollapsed: false,
+    mobileNavOpen: false,
+    commandOpen: false,
+    commandQuery: '',
+    bellOpen: false,
+    syncing: false,
+    loginTab: 'lab',
+    toasts: [],
+    toastSeq: 1,
+    viewportWidth: typeof window !== 'undefined' ? window.innerWidth : 1440
+  };
+
+  componentDidMount() {
+    this._onResize = () => this.setState({ viewportWidth: window.innerWidth });
+    window.addEventListener('resize', this._onResize);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._onResize);
+  }
+
+  pushToast(type, message) {
+    var id = this.state.toastSeq;
+    var colors = { success: '#34d399', error: '#f87171', info: '#60a5fa' };
+    var icon = type === 'success' ? svg(E('polyline', { points: '4 12 9 17 20 6', key: 1 })) :
+      type === 'error' ? svg([E('line', { x1: 6, y1: 6, x2: 18, y2: 18, key: 1 }), E('line', { x1: 18, y1: 6, x2: 6, y2: 18, key: 2 })]) :
+      svg([E('circle', { cx: 12, cy: 12, r: 9, key: 1 }), E('line', { x1: 12, y1: 11, x2: 12, y2: 16, key: 2 }), E('circle', { cx: 12, cy: 8, r: .4, fill: 'currentColor', key: 3 })]);
+    var t = { id: id, message: message, borderColor: colors[type] || colors.info, icon: icon };
+    this.setState(s => ({ toasts: [...s.toasts, t], toastSeq: s.toastSeq + 1 }));
+    setTimeout(() => { this.setState(s => ({ toasts: s.toasts.filter(x => x.id !== id) })); }, 3600);
+  }
+
+  renderVals() {
+    var st = this.state;
+    var dark = st.theme === 'dark';
+    var t = dark ? {
+      bg: 'oklch(0.16 0.014 250)', surface: 'oklch(0.20 0.016 250)', surfaceHover: 'oklch(0.245 0.017 250)',
+      border: 'oklch(0.30 0.018 250)', fg: 'oklch(0.94 0.01 250)', muted: 'oklch(0.63 0.02 250)',
+      accent: 'oklch(0.78 0.17 152)', accentFg: 'oklch(0.14 0.02 152)', accent2: 'oklch(0.75 0.15 210)',
+      sidebarBg: 'oklch(0.12 0.014 250)', gridLine: 'oklch(0.24 0.016 250)',
+      rootBadgeBg: 'oklch(0.30 0.09 25)', rootBadgeFg: 'oklch(0.85 0.10 25)',
+      statusEarlyText: 'oklch(0.72 0.13 250)', statusEarlyBg: 'oklch(0.26 0.06 250)',
+      statusDoneText: 'oklch(0.75 0.15 152)', statusDoneBg: 'oklch(0.26 0.06 152)',
+      statusLateText: 'oklch(0.78 0.14 80)', statusLateBg: 'oklch(0.28 0.06 80)',
+      statusMissingText: 'oklch(0.72 0.17 25)', statusMissingBg: 'oklch(0.28 0.07 25)'
+    } : {
+      bg: 'oklch(0.98 0.004 250)', surface: 'oklch(1 0 0)', surfaceHover: 'oklch(0.965 0.006 250)',
+      border: 'oklch(0.90 0.006 250)', fg: 'oklch(0.20 0.01 250)', muted: 'oklch(0.50 0.015 250)',
+      accent: 'oklch(0.52 0.15 152)', accentFg: 'oklch(1 0 0)', accent2: 'oklch(0.50 0.14 210)',
+      sidebarBg: 'oklch(1 0 0)', gridLine: 'oklch(0.93 0.006 250)',
+      rootBadgeBg: 'oklch(0.92 0.05 25)', rootBadgeFg: 'oklch(0.45 0.15 25)',
+      statusEarlyText: 'oklch(0.45 0.15 250)', statusEarlyBg: 'oklch(0.94 0.03 250)',
+      statusDoneText: 'oklch(0.45 0.15 152)', statusDoneBg: 'oklch(0.94 0.03 152)',
+      statusLateText: 'oklch(0.48 0.14 80)', statusLateBg: 'oklch(0.94 0.05 80)',
+      statusMissingText: 'oklch(0.50 0.18 25)', statusMissingBg: 'oklch(0.94 0.04 25)'
+    };
+
+    var isMobile = st.viewportWidth < 900;
+    var collapsed = st.sidebarCollapsed && !isMobile;
+    var showSidebarLabel = !collapsed;
+
+    var icons = {
+      grid: svg([E('rect', { x: 3, y: 3, width: 8, height: 8, rx: 1.5, key: 1 }), E('rect', { x: 13, y: 3, width: 8, height: 8, rx: 1.5, key: 2 }), E('rect', { x: 3, y: 13, width: 8, height: 8, rx: 1.5, key: 3 }), E('rect', { x: 13, y: 13, width: 8, height: 8, rx: 1.5, key: 4 })]),
+      users: svg([E('circle', { cx: 8, cy: 8, r: 3, key: 1 }), E('circle', { cx: 17, cy: 8, r: 2.5, key: 2 }), E('path', { d: 'M2.5 20v-1.5A4.5 4.5 0 0 1 7 14h2a4.5 4.5 0 0 1 4.5 4.5V20', key: 3 }), E('path', { d: 'M14.5 20v-1a4 4 0 0 1 4-4h0a4 4 0 0 1 3.5 2.1', key: 4 })]),
+      calendar: svg([E('rect', { x: 3, y: 5, width: 18, height: 16, rx: 2, key: 1 }), E('line', { x1: 3, y1: 10, x2: 21, y2: 10, key: 2 }), E('line', { x1: 8, y1: 3, x2: 8, y2: 7, key: 3 }), E('line', { x1: 16, y1: 3, x2: 16, y2: 7, key: 4 })]),
+      target: svg([E('circle', { cx: 12, cy: 12, r: 8.5, key: 1 }), E('circle', { cx: 12, cy: 12, r: 4.5, key: 2 }), E('circle', { cx: 12, cy: 12, r: .6, fill: 'currentColor', key: 3 })]),
+      activity: svg(E('polyline', { points: '2.5,13 8,13 10,19 14,5 16,13 21.5,13' })),
+      link: svg([E('circle', { cx: 8, cy: 12, r: 3.2, key: 1 }), E('circle', { cx: 16, cy: 12, r: 3.2, key: 2 }), E('line', { x1: 11, y1: 12, x2: 13, y2: 12, key: 3 })]),
+      file: svg([E('rect', { x: 5, y: 3, width: 14, height: 18, rx: 2, key: 1 }), E('line', { x1: 8, y1: 8, x2: 16, y2: 8, key: 2 }), E('line', { x1: 8, y1: 12.5, x2: 16, y2: 12.5, key: 3 }), E('line', { x1: 8, y1: 17, x2: 13, y2: 17, key: 4 })]),
+      gear: svg([E('circle', { cx: 12, cy: 12, r: 3, key: 1 }), E('circle', { cx: 12, cy: 12, r: 7.5, key: 2 }), E('line', { x1: 12, y1: 2.5, x2: 12, y2: 4.5, key: 3 }), E('line', { x1: 12, y1: 19.5, x2: 12, y2: 21.5, key: 4 }), E('line', { x1: 2.5, y1: 12, x2: 4.5, y2: 12, key: 5 }), E('line', { x1: 19.5, y1: 12, x2: 21.5, y2: 12, key: 6 })]),
+      terminal: svg([E('rect', { x: 3, y: 4, width: 18, height: 16, rx: 2, key: 1 }), E('polyline', { points: '7,9.5 10.2,12 7,14.5', key: 2 }), E('line', { x1: 12, y1: 14.5, x2: 16, y2: 14.5, key: 3 })]),
+      sun: svg([E('circle', { cx: 12, cy: 12, r: 4, key: 1 }), E('line', { x1: 12, y1: 1.5, x2: 12, y2: 3.5, key: 2 }), E('line', { x1: 12, y1: 20.5, x2: 12, y2: 22.5, key: 3 }), E('line', { x1: 1.5, y1: 12, x2: 3.5, y2: 12, key: 4 }), E('line', { x1: 20.5, y1: 12, x2: 22.5, y2: 12, key: 5 }), E('line', { x1: 4.2, y1: 4.2, x2: 5.6, y2: 5.6, key: 6 }), E('line', { x1: 18.4, y1: 18.4, x2: 19.8, y2: 19.8, key: 7 }), E('line', { x1: 4.2, y1: 19.8, x2: 5.6, y2: 18.4, key: 8 }), E('line', { x1: 18.4, y1: 5.6, x2: 19.8, y2: 4.2, key: 9 })]),
+      moon: svg([E('path', { d: 'M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z', key: 1, fill: 'currentColor', stroke: 'none' })]),
+      bell: svg([E('path', { d: 'M6 10a6 6 0 0 1 12 0v4l2 4H4l2-4Z', key: 1 }), E('path', { d: 'M10 21a2 2 0 0 0 4 0', key: 2 })]),
+      search: svg([E('circle', { cx: 11, cy: 11, r: 6.5, key: 1 }), E('line', { x1: 16, y1: 16, x2: 21, y2: 21, key: 2 })]),
+      menu: svg([E('line', { x1: 3, y1: 6, x2: 21, y2: 6, key: 1 }), E('line', { x1: 3, y1: 12, x2: 21, y2: 12, key: 2 }), E('line', { x1: 3, y1: 18, x2: 21, y2: 18, key: 3 })]),
+      x: svg([E('line', { x1: 6, y1: 6, x2: 18, y2: 18, key: 1 }), E('line', { x1: 18, y1: 6, x2: 6, y2: 18, key: 2 })]),
+      chevronLeft: svg(E('polyline', { points: '15,5 8,12 15,19' })),
+      chevronRight: svg(E('polyline', { points: '9,5 16,12 9,19' })),
+      download: svg([E('line', { x1: 12, y1: 3, x2: 12, y2: 14, key: 1 }), E('polyline', { points: '7,10 12,15 17,10', key: 2 }), E('line', { x1: 4, y1: 19, x2: 20, y2: 19, key: 3 })]),
+      logout: svg([E('path', { d: 'M15 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h9', key: 1 }), E('polyline', { points: '11,8 15,12 11,16', key: 2 }), E('line', { x1: 15, y1: 12, x2: 3, y2: 12, key: 3 })]),
+      refresh: svg([E('path', { d: 'M21 12a9 9 0 1 1-2.6-6.35', key: 1 }), E('polyline', { points: '21,3 21,8 16,8', key: 2 })])
+    };
+
+    var navDefs = [
+      { id: 'overview', label: 'Overview', icon: icons.grid },
+      { id: 'members', label: 'Members', icon: icons.users },
+      { id: 'semesters', label: 'Semesters', icon: icons.calendar },
+      { id: 'challenges', label: 'Challenges', icon: icons.target },
+      { id: 'progress', label: 'Progress', icon: icons.activity },
+      { id: 'platforms', label: 'Platforms', icon: icons.link },
+      { id: 'reports', label: 'Reports', icon: icons.file },
+      { id: 'settings', label: 'Settings', icon: icons.gear }
+    ];
+    var navItems = navDefs.map(n => {
+      var active = st.page === n.id;
+      return {
+        id: n.id, label: n.label, icon: n.icon,
+        onClick: () => this.setState({ page: n.id, mobileNavOpen: false }),
+        style: 'display:flex; align-items:center; gap:12px; width:100%; padding:9px 10px; border-radius:9px; border:none; cursor:pointer; font-size:13.5px; font-weight:600; text-align:left; background:' + (active ? t.surfaceHover : 'transparent') + '; color:' + (active ? t.accent : t.fg) + ';',
+        hoverStyle: active ? '' : ('background:' + t.surfaceHover + ';')
+      };
+    });
+
+    var goPage = (p) => () => this.setState({ page: p, commandOpen: false, mobileNavOpen: false });
+
+    var statusMeta = {
+      early: { label: 'Early', color: t.statusEarlyText, bg: t.statusEarlyBg },
+      done: { label: 'Done', color: t.statusDoneText, bg: t.statusDoneBg },
+      late: { label: 'Late', color: t.statusLateText, bg: t.statusLateBg },
+      missing: { label: 'Missing', color: t.statusMissingText, bg: t.statusMissingBg }
+    };
+
+    var membersData = [
+      { name: 'Nguyễn Minh Anh', email: 'minhanh@hslab.dev', role: 'Lab Leader', externalId: 'rm_10234' },
+      { name: 'Trần Lâm', email: 'tran.lam@hslab.dev', role: 'Presenter', externalId: 'rm_10391' },
+      { name: 'Lê Bảo Châu', email: 'bao.chau@hslab.dev', role: 'Member', externalId: 'rm_10422' },
+      { name: 'Phạm Gia Huy', email: 'gia.huy@hslab.dev', role: 'Member', externalId: 'rm_10488' },
+      { name: 'Đỗ Thanh Vy', email: 'thanh.vy@hslab.dev', role: 'Member', externalId: 'rm_10501' },
+      { name: 'Vũ Đăng Khoa', email: 'dang.khoa@hslab.dev', role: 'Member', externalId: 'rm_10556' }
+    ].map(m => ({ ...m, initials: m.name.split(' ').slice(-2).map(w => w[0]).join('').toUpperCase(), onEdit: () => this.pushToast('info', 'Editing ' + m.name + ' (demo)') }));
+
+    var challengesData = [
+      { name: 'Buffer Overflow 101', week: 6, platform: 'Root Me', deadline: 'Aug 27', points: 120 },
+      { name: 'SQLi Warm-up', week: 6, platform: 'Root Me', deadline: 'Aug 28', points: 80 },
+      { name: 'JWT None Algorithm', week: 7, platform: 'Root Me', deadline: 'Sep 03', points: 100 },
+      { name: 'Format String Leak', week: 7, platform: 'Root Me', deadline: 'Sep 03', points: 140 },
+      { name: 'ret2libc Warmup', week: 8, platform: 'Root Me', deadline: 'Sep 10', points: 160 },
+      { name: 'XXE Basics', week: 8, platform: 'Root Me', deadline: 'Sep 10', points: 90 }
+    ];
+
+    var progressData = [
+      { member: 'Nguyễn Minh Anh', challenge: 'Buffer Overflow 101', status: 'done', date: 'Aug 24' },
+      { member: 'Trần Lâm', challenge: 'Buffer Overflow 101', status: 'early', date: 'Aug 22' },
+      { member: 'Lê Bảo Châu', challenge: 'SQLi Warm-up', status: 'late', date: 'Aug 29' },
+      { member: 'Phạm Gia Huy', challenge: 'SQLi Warm-up', status: 'missing', date: '—' },
+      { member: 'Đỗ Thanh Vy', challenge: 'JWT None Algorithm', status: 'done', date: 'Sep 02' },
+      { member: 'Vũ Đăng Khoa', challenge: 'JWT None Algorithm', status: 'missing', date: '—' },
+      { member: 'Nguyễn Minh Anh', challenge: 'Format String Leak', status: 'early', date: 'Sep 01' }
+    ].map(p => ({ ...p, statusColor: statusMeta[p.status].color, statusBg: statusMeta[p.status].bg, statusLabel: statusMeta[p.status].label }));
+
+    var platformsData = [
+      { name: 'Root Me', isFocus: true, connColor: t.statusDoneText, connLabel: 'Connected', lastSync: '2 hours ago' },
+      { name: 'HackTheBox', isFocus: false, connColor: t.muted, connLabel: 'Not configured', lastSync: 'never' }
+    ];
+
+    var reportsData = [
+      { title: 'Weekly Report — Aug 18–24', period: 'Fall 2026 · Week 6', status: 'Draft', badgeBg: t.statusLateBg, badgeText: t.statusLateText, onExport: () => this.pushToast('success', 'Exported weekly report') },
+      { title: 'Weekly Report — Aug 11–17', period: 'Fall 2026 · Week 5', status: 'Sent', badgeBg: t.statusDoneBg, badgeText: t.statusDoneText, onExport: () => this.pushToast('success', 'PDF downloaded') },
+      { title: 'Semester Report — Spring 2026', period: 'Final ranking + trend', status: 'Sent', badgeBg: t.statusDoneBg, badgeText: t.statusDoneText, onExport: () => this.pushToast('success', 'Excel downloaded') }
+    ];
+
+    var semestersData = [
+      { name: 'Fall 2026', status: 'Active', badgeBg: t.statusDoneBg, badgeText: t.statusDoneText, range: 'Aug 15 – Dec 20, 2026', onGenerate: () => this.pushToast('info', 'Semester still active — close it out first') },
+      { name: 'Spring 2026', status: 'Closed', badgeBg: t.border, badgeText: t.muted, range: 'Jan 08 – May 30, 2026', onGenerate: () => this.pushToast('success', 'Semester report generated') },
+      { name: 'Fall 2025', status: 'Closed', badgeBg: t.border, badgeText: t.muted, range: 'Aug 12 – Dec 18, 2025', onGenerate: () => this.pushToast('success', 'Semester report generated') }
+    ];
+
+    var labsData = [
+      { name: 'HSLab Core', members: 24, status: 'Active', badgeBg: t.statusDoneBg, badgeText: t.statusDoneText, created: 'Jan 2025' },
+      { name: 'CyberSec Club', members: 11, status: 'Needs attention', badgeBg: t.statusLateBg, badgeText: t.statusLateText, created: 'Mar 2025' },
+      { name: 'RedTeam Society', members: 18, status: 'Active', badgeBg: t.statusDoneBg, badgeText: t.statusDoneText, created: 'Jun 2025' },
+      { name: 'Night Owls CTF', members: 7, status: 'Suspended', badgeBg: t.border, badgeText: t.muted, created: 'Feb 2026' }
+    ];
+
+    var allPages = ['overview', 'members', 'semesters', 'challenges', 'progress', 'platforms', 'reports', 'settings'];
+    var pageTitles = { overview: 'Overview', members: 'Members', semesters: 'Semesters', challenges: 'Challenges', progress: 'Progress', platforms: 'Platforms', reports: 'Reports', settings: 'Settings', console: 'System Console' };
+
+    var commandAll = navDefs.map(n => ({ id: n.id, label: n.label, icon: n.icon, onClick: goPage(n.id) }))
+      .concat([{ id: 'console', label: 'Admin Console', icon: icons.terminal, onClick: () => this.setState({ page: 'console', commandOpen: false }) }]);
+    var q = (st.commandQuery || '').toLowerCase();
+    var commandResults = q ? commandAll.filter(r => r.label.toLowerCase().includes(q)) : commandAll;
+
+    var sidebarWidth = isMobile ? 240 : (collapsed ? 68 : 232);
+
+    return {
+      t: t,
+      icons: icons,
+      themeIcon: dark ? icons.sun : icons.moon,
+      toggleTheme: () => this.setState({ theme: dark ? 'light' : 'dark' }),
+      page: st.page,
+      showApp: st.view === 'app',
+      showLogin: st.view === 'login',
+      goToLogin: () => this.setState({ view: 'login' }),
+      goToApp: () => this.setState({ view: 'app' }),
+      demoLogin: () => this.setState({ view: 'app' }),
+      loginTabLabStyle: 'flex:1; padding:8px; border-radius:7px; border:none; cursor:pointer; font-size:12.5px; font-weight:700; font-family:Manrope,sans-serif; background:' + (st.loginTab === 'lab' ? t.surface : 'transparent') + '; color:' + (st.loginTab === 'lab' ? t.fg : t.muted) + ';',
+      loginTabRootStyle: 'flex:1; padding:8px; border-radius:7px; border:none; cursor:pointer; font-size:12.5px; font-weight:700; font-family:Manrope,sans-serif; background:' + (st.loginTab === 'root' ? t.surface : 'transparent') + '; color:' + (st.loginTab === 'root' ? t.fg : t.muted) + ';',
+      setLoginTabLab: () => this.setState({ loginTab: 'lab' }),
+      setLoginTabRoot: () => this.setState({ loginTab: 'root' }),
+      loginModeHint: st.loginTab === 'root' ? '/console/login — whole-system scope' : '/login — this Lab only',
+
+      sidebarStyle: 'position:' + (isMobile ? 'fixed' : 'relative') + '; left:' + (isMobile ? (st.mobileNavOpen ? '0' : '-260px') : '0') + '; top:0; height:100vh; z-index:31; width:' + sidebarWidth + 'px; min-width:' + sidebarWidth + 'px; background:' + t.sidebarBg + '; border-right:1px solid ' + t.border + '; display:flex; flex-direction:column; transition:width .2s ease, left .25s ease; flex-shrink:0;',
+      sidebarPad: collapsed ? '0 19px' : '0 16px',
+      showSidebarLabel: showSidebarLabel,
+      tenantLabel: 'lab: hslab-core',
+      navItems: navItems,
+      isConsolePage: st.page === 'console',
+      consoleNavStyle: 'display:flex; align-items:center; gap:12px; width:100%; padding:9px 10px; border-radius:9px; border:none; cursor:pointer; font-size:13.5px; font-weight:600; text-align:left; background:' + (st.page === 'console' ? t.surfaceHover : 'transparent') + '; color:' + (st.page === 'console' ? t.accent : t.fg) + ';',
+      consoleHoverStyle: st.page === 'console' ? '' : ('background:' + t.surfaceHover + ';'),
+      goConsole: () => this.setState({ page: 'console', mobileNavOpen: false }),
+      goToApp2: null,
+      collapseBtnDisplay: isMobile ? 'none' : 'flex',
+      collapseIcon: collapsed ? icons.chevronRight : icons.chevronLeft,
+      toggleSidebar: () => this.setState({ sidebarCollapsed: !st.sidebarCollapsed }),
+      mobileNavOpen: st.mobileNavOpen,
+      openMobileNav: () => this.setState({ mobileNavOpen: true }),
+      closeMobileNav: () => this.setState({ mobileNavOpen: false }),
+      hamburgerDisplay: isMobile ? 'flex' : 'none',
+
+      pageTitle: pageTitles[st.page] || '',
+      openCommand: () => this.setState({ commandOpen: true, commandQuery: '' }),
+      closeCommand: () => this.setState({ commandOpen: false }),
+      stopProp: (e) => e.stopPropagation(),
+      commandOpen: st.commandOpen,
+      commandQuery: st.commandQuery,
+      onCommandChange: (e) => this.setState({ commandQuery: e.target.value }),
+      commandResults: commandResults,
+
+      bellOpen: st.bellOpen,
+      toggleBell: () => this.setState({ bellOpen: !st.bellOpen }),
+
+      showOverview: st.page === 'overview',
+      showMembers: st.page === 'members',
+      showSemesters: st.page === 'semesters',
+      showChallenges: st.page === 'challenges',
+      showProgress: st.page === 'progress',
+      showPlatforms: st.page === 'platforms',
+      showReports: st.page === 'reports',
+      showSettings: st.page === 'settings',
+      showConsole: st.page === 'console',
+
+      demoSync: () => {
+        this.setState({ syncing: true });
+        setTimeout(() => { this.setState({ syncing: false }); this.pushToast('success', 'Sync complete — 3 new submissions found'); }, 1300);
+      },
+      syncing: st.syncing,
+      syncSpin: st.syncing ? 'spin 0.8s linear infinite' : 'none',
+      syncLabel: st.syncing ? 'Syncing…' : 'Sync now',
+
+      statCards: [
+        { label: 'Total members', value: '24', delta: '+2 this month', deltaColor: t.statusDoneText },
+        { label: 'Active semester', value: 'Fall 26', delta: 'Week 6 of 16', deltaColor: t.muted },
+        { label: 'Completion rate', value: '63%', delta: '+5% vs last week', deltaColor: t.statusDoneText },
+        { label: 'Last sync', value: '2h ago', delta: 'Root Me · OK', deltaColor: t.statusDoneText }
+      ],
+      legendItems: [
+        { label: 'Early', color: t.statusEarlyText, pct: '22%' },
+        { label: 'Done', color: t.statusDoneText, pct: '41%' },
+        { label: 'Late', color: t.statusLateText, pct: '15%' },
+        { label: 'Missing', color: t.statusMissingText, pct: '22%' }
+      ],
+      goReports: () => this.setState({ page: 'reports' }),
+
+      addMember: () => this.pushToast('info', 'Add-member panel would open here'),
+      memberCols: ['Name', 'Email', 'Role', 'Root Me ID', ''],
+      members: membersData,
+
+      semesters: semestersData,
+
+      addChallenge: () => this.pushToast('info', 'Add-challenge panel would open here'),
+      challengeCols: ['Challenge', 'Week', 'Platform', 'Deadline', 'Points'],
+      challenges: challengesData,
+
+      progressCols: ['Member', 'Challenge', 'Status', 'Date'],
+      progressRows: progressData,
+
+      platforms: platformsData,
+
+      reports: reportsData,
+
+      demoSaveSettings: () => this.pushToast('success', 'Settings saved'),
+      demoTestEmail: () => this.pushToast('info', 'Test email sent to your inbox'),
+
+      consoleStats: [
+        { label: 'Total Labs', value: '4' },
+        { label: 'Active Labs', value: '3' },
+        { label: 'Members system-wide', value: '60' }
+      ],
+      labCols: ['Lab', 'Members', 'Status', 'Created'],
+      labs: labsData,
+
+      toasts: st.toasts.map(tt => ({ ...tt, onDismiss: () => this.setState(s => ({ toasts: s.toasts.filter(x => x.id !== tt.id) })) }))
+    };
+  }
+}
+</script>
+</body>
+</html>
