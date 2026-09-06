@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.deps import get_current_super_admin, get_db
 from app.core.security import hash_password
-from app.db.session import bind_email_lookup_context, enable_tenant_context_now
+from app.db.session import bind_email_lookup_context, enable_email_lookup_now, enable_tenant_context_now
 from app.models.challenge import Challenge
 from app.models.member import Member, MemberRole
 from app.models.platform import Platform
@@ -22,7 +22,9 @@ from app.models.tenant import Tenant
 from app.models.sync_log import SyncLog
 from app.models.tenant_data_job import TenantDataJob
 from app.schemas.dashboard import LabAttentionItem, SuperAdminDashboardOut
+from app.schemas.member import MemberOut
 from app.schemas.tenant import (
+    AssignLeaderRequest,
     DeleteLabRequest,
     DeletionPreview,
     RestoreBundleRequest,
@@ -111,6 +113,60 @@ def update_lab(
     db.commit()
     db.refresh(tenant)
     return tenant
+
+
+@router.post("/{lab_id}/assign-leader", response_model=MemberOut, status_code=status.HTTP_201_CREATED)
+def assign_leader(
+    lab_id: uuid.UUID,
+    payload: AssignLeaderRequest,
+    db: Session = Depends(get_db),
+    current: SuperAdmin = Depends(get_current_super_admin),
+):
+    """§15 (decided) — when a Lab has no active Lab Leader left, the Super
+    Admin adds one directly from the Console. Deliberately narrow: it only
+    creates a brand-new account (no reading/browsing this Lab's existing
+    Members — see AssignLeaderRequest's docstring), and it refuses to run
+    at all if the Lab already has an active Lab Leader, so it can never be
+    used as a side-channel to just add extra leaders at will.
+    """
+    tenant = db.get(Tenant, lab_id)
+    if not tenant:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lab not found")
+
+    enable_tenant_context_now(db, lab_id)
+    active_leaders = (
+        db.query(Member)
+        .filter(Member.tenant_id == lab_id, Member.role == MemberRole.LAB_LEADER, Member.active.is_(True))
+        .count()
+    )
+    if active_leaders > 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This Lab already has an active Lab Leader — use that Lab Leader's own ownership transfer instead.",
+        )
+
+    enable_email_lookup_now(db)
+    if db.query(Member).filter(Member.email == payload.email).first():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already in use")
+
+    enable_tenant_context_now(db, lab_id)
+    leader = Member(
+        tenant_id=lab_id,
+        full_name=payload.full_name,
+        email=payload.email,
+        password_hash=hash_password(payload.password),
+        role=MemberRole.LAB_LEADER,
+    )
+    db.add(leader)
+    db.flush()
+    record_audit(
+        db, tenant_id=lab_id, actor=current, action="lab.leader_assigned_by_admin",
+        summary=f"Super Admin assigned {payload.email} as Lab Leader (no active Lab Leader remained)",
+        target_type="member", target_id=leader.id,
+    )
+    db.commit()
+    db.refresh(leader)
+    return leader
 
 
 @router.get("/{lab_id}/deletion-preview", response_model=DeletionPreview)

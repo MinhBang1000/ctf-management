@@ -45,6 +45,18 @@ class DeleteLabRequest(BaseModel):
     confirm_name: str
 
 
+class AssignLeaderRequest(BaseModel):
+    # §15 — "the Super Admin directly promotes/adds a new Lab Leader for
+    # that Lab from the Console" when none is left. Creates a brand-new
+    # account rather than promoting an existing Member: Members has no
+    # general Super-Admin SELECT bypass (deliberate no-impersonation
+    # design), so this stays a narrow INSERT-only action instead of
+    # widening that boundary just to populate a "pick a member" dropdown.
+    full_name: str = Field(min_length=1, max_length=255)
+    email: EmailStr
+    password: str = Field(min_length=8)
+
+
 class RestoreBundleRequest(BaseModel):
     bundle: dict
     mode: str  # "new_lab" | "overwrite_existing"
