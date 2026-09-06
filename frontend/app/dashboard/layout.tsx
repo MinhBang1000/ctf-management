@@ -24,6 +24,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/dashboard/audit-log": "Audit Log",
   "/dashboard/settings": "Settings",
   "/dashboard/profile": "My Profile",
+  "/dashboard/feedback": "Feedback",
 };
 
 function toTopbarNotification(n: Notification): TopbarNotification {

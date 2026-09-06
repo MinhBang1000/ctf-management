@@ -108,6 +108,9 @@ export default function ConsolePage() {
             <Link href="/console/audit-log" className="text-sm font-semibold text-muted hover:text-foreground">
               Audit Log
             </Link>
+            <Link href="/console/feedback" className="text-sm font-semibold text-muted hover:text-foreground">
+              Feedback
+            </Link>
             <Button variant="outline" onClick={logout}>
               Sign out
             </Button>

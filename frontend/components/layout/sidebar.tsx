@@ -13,6 +13,7 @@ import {
   LayoutGrid,
   Link2,
   LogOut,
+  MessageSquarePlus,
   Settings as SettingsIcon,
   Target,
   Users,
@@ -114,6 +115,20 @@ export function Sidebar({ member, collapsed, onToggleCollapse, isMobile, mobileO
             );
           })}
         </nav>
+
+        <div className="flex-shrink-0 border-t border-[var(--border)] p-2.5">
+          <Link
+            href="/dashboard/feedback"
+            onClick={onCloseMobile}
+            title={effectiveCollapsed ? "Feedback" : undefined}
+            className={`flex w-full items-center gap-3 rounded-[9px] px-2.5 py-2 text-[13.5px] font-semibold transition-colors ${
+              pathname === "/dashboard/feedback" ? "bg-[var(--surface-hover)] text-accent" : "text-foreground hover:bg-[var(--surface-hover)]"
+            } ${effectiveCollapsed ? "justify-center" : ""}`}
+          >
+            <MessageSquarePlus size={20} strokeWidth={1.75} className="flex-shrink-0" />
+            {showLabel && <span className="flex-1 truncate text-left">Feedback</span>}
+          </Link>
+        </div>
 
         <div className={`flex flex-shrink-0 items-center gap-2.5 border-t border-[var(--border)] p-3 ${effectiveCollapsed ? "justify-center" : ""}`}>
           <Link

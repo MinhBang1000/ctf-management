@@ -271,3 +271,13 @@ export interface TenantSettings {
   smtp: SMTPConfig;
   professor_email: string | null;
 }
+
+export interface PlatformFeedbackEntry {
+  id: string;
+  tenant_id: string;
+  tenant_name: string;
+  member_email: string;
+  member_role: string;
+  message: string;
+  created_at: string;
+}
