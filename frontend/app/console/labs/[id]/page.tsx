@@ -83,7 +83,7 @@ export default function LabDetailPage() {
     if (!confirm(`This permanently deletes "${lab.name}" and all its data right now. Continue?`)) return;
     setDeleting(true);
     try {
-      await api.delete(`/admin/labs/${labId}`);
+      await api.delete(`/admin/labs/${labId}`, { confirm_name: confirmName });
       pushToast("success", `${lab.name} deleted`);
       router.replace("/console");
     } catch (err) {
