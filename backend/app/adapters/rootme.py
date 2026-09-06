@@ -9,6 +9,7 @@ from app.adapters.base import (
     AdapterError,
     AdapterNotFoundError,
     ChallengeDetail,
+    ChallengeSearchResult,
     PlatformAdapter,
     ValidationEntry,
 )
@@ -181,6 +182,51 @@ class RootMeAdapter(PlatformAdapter):
                 )
             )
         return result
+
+    def search_challenges(self, title: str) -> list[ChallengeSearchResult]:
+        # UNVERIFIED against the real API — no live api_key was available
+        # while this was written (unlike resolve_user, which was corrected
+        # after a real smoke test caught two wrong assumptions; see that
+        # method's own history). This mirrors /auteurs?nom='s *confirmed*
+        # shape (a list wrapping one object with numeric-string keys) on
+        # the assumption that Root Me's other list endpoints follow the
+        # same convention — and defensively also accepts a genuine flat
+        # list, in case /challenges doesn't match /auteurs's shape (already
+        # true once, per the module docstring: "Root Me's API shapes don't
+        # generalize across endpoints"). Run a real smoke test against
+        # GET /challenges?titre=... with a real api_key before trusting
+        # this in production, the same way resolve_user was fixed.
+        try:
+            data = self._get("/challenges", params={"titre": title})
+        except AdapterNotFoundError:
+            return []
+
+        entries: list[dict] = []
+        if isinstance(data, list):
+            if len(data) == 1 and isinstance(data[0], dict) and not data[0].get("id_challenge"):
+                # Looks like /auteurs?nom='s "list wrapping one numeric-
+                # keyed object" shape rather than a flat list of results.
+                entries = [v for v in data[0].values() if isinstance(v, dict)]
+            else:
+                entries = [v for v in data if isinstance(v, dict)]
+        elif isinstance(data, dict):
+            entries = [v for v in data.values() if isinstance(v, dict)]
+
+        results = []
+        for entry in entries:
+            id_challenge = entry.get("id_challenge")
+            if id_challenge is None:
+                continue
+            results.append(
+                ChallengeSearchResult(
+                    external_challenge_id=str(id_challenge),
+                    title=entry.get("titre"),
+                    category=entry.get("rubrique"),
+                    language=entry.get("langue"),
+                    url=entry.get("url_challenge") or entry.get("url"),
+                )
+            )
+        return results
 
     def get_challenge_detail(self, external_challenge_id: str) -> ChallengeDetail:
         data = self._get(f"/challenges/{external_challenge_id}")
