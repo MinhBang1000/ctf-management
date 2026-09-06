@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Bell, Menu, Moon, Search, Sun } from "lucide-react";
+import { Bell, Menu, Moon, Search, Sun, X } from "lucide-react";
 import { useTheme } from "@/lib/theme-context";
 
 export interface TopbarNotification {
@@ -9,6 +9,7 @@ export interface TopbarNotification {
   title: string;
   detail: string;
   dotColor?: string;
+  read: boolean;
 }
 
 interface TopbarProps {
@@ -18,13 +19,27 @@ interface TopbarProps {
   onOpenMobileNav?: () => void;
   onOpenCommand?: () => void;
   notifications?: TopbarNotification[];
+  onMarkRead?: (id: string) => void;
+  onDismiss?: (id: string) => void;
+  onMarkAllRead?: () => void;
   rightExtra?: ReactNode;
 }
 
-export function Topbar({ title, badge, showHamburger, onOpenMobileNav, onOpenCommand, notifications, rightExtra }: TopbarProps) {
+export function Topbar({
+  title,
+  badge,
+  showHamburger,
+  onOpenMobileNav,
+  onOpenCommand,
+  notifications,
+  onMarkRead,
+  onDismiss,
+  onMarkAllRead,
+  rightExtra,
+}: TopbarProps) {
   const { theme, toggleTheme } = useTheme();
   const [bellOpen, setBellOpen] = useState(false);
-  const hasNotifications = (notifications?.length ?? 0) > 0;
+  const unreadCount = notifications?.filter((n) => !n.read).length ?? 0;
 
   return (
     <header className="flex h-[60px] flex-shrink-0 items-center gap-3.5 border-b border-[var(--border)] bg-surface px-5">
@@ -87,29 +102,53 @@ export function Topbar({ title, badge, showHamburger, onOpenMobileNav, onOpenCom
             className="relative flex h-[34px] w-[34px] items-center justify-center rounded-lg border border-[var(--border)] text-foreground hover:bg-[var(--surface-hover)]"
           >
             <Bell size={17} />
-            {hasNotifications && (
+            {unreadCount > 0 && (
               <span className="absolute right-1.5 top-1.5 h-[7px] w-[7px] rounded-full border-[1.5px] border-surface bg-[var(--status-late)]" />
             )}
           </button>
           {bellOpen && (
-            <div className="absolute right-0 top-[42px] z-40 w-[calc(100vw-2.5rem)] max-w-[300px] animate-fade-up overflow-hidden rounded-xl border border-[var(--border)] bg-surface shadow-[0_16px_40px_rgba(0,0,0,0.2)]">
-              <div className="border-b border-[var(--border)] px-3.5 py-3 text-[12.5px] font-bold">Notifications</div>
-              {hasNotifications ? (
-                notifications!.map((n) => (
-                  <div key={n.id} className="flex gap-2.5 border-b border-[var(--border)] px-3.5 py-3 last:border-b-0">
-                    <span
-                      className="mt-[5px] h-[7px] w-[7px] flex-shrink-0 rounded-full"
-                      style={{ background: n.dotColor ?? "var(--accent)" }}
-                    />
-                    <div>
-                      <div className="text-[12.5px] font-semibold">{n.title}</div>
-                      <div className="mt-0.5 text-[11.5px] text-muted">{n.detail}</div>
+            <div className="absolute right-0 top-[42px] z-40 w-[calc(100vw-2.5rem)] max-w-[320px] animate-fade-up overflow-hidden rounded-xl border border-[var(--border)] bg-surface shadow-[0_16px_40px_rgba(0,0,0,0.2)]">
+              <div className="flex items-center justify-between border-b border-[var(--border)] px-3.5 py-3">
+                <span className="text-[12.5px] font-bold">Notifications</span>
+                {unreadCount > 0 && onMarkAllRead && (
+                  <button onClick={onMarkAllRead} className="text-[11px] font-semibold text-accent">
+                    Mark all read
+                  </button>
+                )}
+              </div>
+              <div className="max-h-[360px] overflow-y-auto">
+                {notifications && notifications.length > 0 ? (
+                  notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      onClick={() => onMarkRead?.(n.id)}
+                      className="flex cursor-pointer gap-2.5 border-b border-[var(--border)] px-3.5 py-3 last:border-b-0 hover:bg-[var(--surface-hover)]"
+                    >
+                      <span
+                        className="mt-[5px] h-[7px] w-[7px] flex-shrink-0 rounded-full"
+                        style={{ background: n.read ? "var(--border)" : n.dotColor ?? "var(--accent)" }}
+                      />
+                      <div className="flex-1">
+                        <div className={`text-[12.5px] ${n.read ? "font-medium text-muted" : "font-semibold"}`}>{n.title}</div>
+                        <div className="mt-0.5 text-[11.5px] text-muted">{n.detail}</div>
+                      </div>
+                      {onDismiss && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDismiss(n.id);
+                          }}
+                          className="flex h-4 w-4 flex-shrink-0 items-center justify-center text-muted hover:text-foreground"
+                        >
+                          <X size={13} />
+                        </button>
+                      )}
                     </div>
-                  </div>
-                ))
-              ) : (
-                <div className="px-3.5 py-4 text-center text-[12.5px] text-muted">Nothing new right now.</div>
-              )}
+                  ))
+                ) : (
+                  <div className="px-3.5 py-4 text-center text-[12.5px] text-muted">Nothing new right now.</div>
+                )}
+              </div>
             </div>
           )}
         </div>

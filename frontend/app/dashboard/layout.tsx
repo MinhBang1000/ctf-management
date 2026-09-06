@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
-import type { LabDashboard, MemberMe } from "@/lib/types";
+import type { MemberMe, Notification } from "@/lib/types";
 import { MemberContext } from "@/lib/member-context";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar, type TopbarNotification } from "@/components/layout/topbar";
@@ -20,8 +20,21 @@ const PAGE_TITLES: Record<string, string> = {
   "/dashboard/progress": "Progress",
   "/dashboard/platforms": "Platforms",
   "/dashboard/reports": "Reports",
+  "/dashboard/automation": "Automation",
+  "/dashboard/audit-log": "Audit Log",
   "/dashboard/settings": "Settings",
+  "/dashboard/profile": "My Profile",
 };
+
+function toTopbarNotification(n: Notification): TopbarNotification {
+  return {
+    id: n.id,
+    title: n.title,
+    detail: n.body ?? "",
+    read: n.read_at !== null,
+    dotColor: n.type === "sync_error" ? "var(--status-missing)" : n.type === "semester_report_nudge" ? "var(--status-late)" : "var(--accent)",
+  };
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -49,29 +62,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  async function loadNotifications() {
+    // §12 — real persisted notifications, not the dashboard's own
+    // computed-live nudges (those still exist on the Overview page's own
+    // banners, unrelated to this bell — see notification_service.py).
+    const rows = await api.get<Notification[]>("/api/v1/notifications");
+    setNotifications(rows.map(toTopbarNotification));
+  }
+
   useEffect(() => {
     if (!member) return;
-    api.get<LabDashboard>("/api/v1/dashboard").then((data) => {
-      const items: TopbarNotification[] = [];
-      if (data.pending_report) {
-        items.push({
-          id: "pending-report",
-          title: "Weekly report ready to review",
-          detail: `Week of ${data.pending_report.period_start} – ${data.pending_report.period_end}`,
-          dotColor: "var(--accent)",
-        });
-      }
-      if (data.semester_report_nudge) {
-        items.push({
-          id: "semester-nudge",
-          title: `${data.semester_report_nudge.semester_name} ended with no report yet`,
-          detail: `Ended ${data.semester_report_nudge.end_date} — generate one from Semesters`,
-          dotColor: "var(--status-late)",
-        });
-      }
-      setNotifications(items);
-    });
+    loadNotifications();
   }, [member]);
+
+  async function markRead(id: string) {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    await api.post(`/api/v1/notifications/${id}/read`);
+  }
+
+  async function dismiss(id: string) {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    await api.post(`/api/v1/notifications/${id}/dismiss`);
+  }
+
+  async function markAllRead() {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    await api.post("/api/v1/notifications/read-all");
+  }
 
   useEffect(() => {
     function onResize() {
@@ -133,13 +150,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             onOpenMobileNav={() => setMobileNavOpen(true)}
             onOpenCommand={() => setCommandOpen(true)}
             notifications={notifications}
+            onMarkRead={markRead}
+            onDismiss={dismiss}
+            onMarkAllRead={markAllRead}
           />
           <main className="flex-1 overflow-y-auto px-4 pb-[60px] pt-5 sm:px-8 sm:pt-7">
             <div className="mx-auto max-w-[1560px] animate-fade-up">{children}</div>
           </main>
         </div>
 
-        <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} />
+        <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} role={member.role} />
       </div>
     </MemberContext.Provider>
   );
