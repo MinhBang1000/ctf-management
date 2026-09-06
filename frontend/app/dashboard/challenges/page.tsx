@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { ExternalLink } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
-import type { Challenge, ChallengeLookupResult, Member, Platform, Semester } from "@/lib/types";
+import type { Challenge, ChallengeLookupResult, ChallengeSearchResult, Member, Platform, Semester } from "@/lib/types";
 import { useMember } from "@/lib/member-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,8 @@ function toLocalInputValue(iso: string) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+const OFFICIAL_ROOTME_HOST = "https://www.root-me.org/";
+
 export default function ChallengesPage() {
   const me = useMember();
   const canManage = me.role === "lab_leader";
@@ -27,6 +30,7 @@ export default function ChallengesPage() {
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -40,8 +44,14 @@ export default function ChallengesPage() {
   const [deadline, setDeadline] = useState("");
   const [points, setPoints] = useState<number | "">("");
   const [externalChallengeId, setExternalChallengeId] = useState("");
+  const [externalUrl, setExternalUrl] = useState("");
   const [lookingUp, setLookingUp] = useState(false);
   const [lookupStatus, setLookupStatus] = useState("");
+
+  // §1 — search-by-name
+  const [searchTitle, setSearchTitle] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<ChallengeSearchResult[] | null>(null);
 
   async function load() {
     const [c, s, p, m] = await Promise.all([
@@ -71,6 +81,84 @@ export default function ChallengesPage() {
     return members.find((m) => m.id === id)?.full_name ?? "—";
   }
 
+  function resetForm() {
+    setSemesterId(semesters.find((x) => x.is_current)?.id ?? semesters[0]?.id ?? "");
+    setPlatformId(platforms[0]?.id ?? "");
+    setWeekNumber(1);
+    setTitle("");
+    setCategory("");
+    setDifficulty("");
+    setExternalChallengeId("");
+    setExternalUrl("");
+    setLookupStatus("");
+    setPresenterId("");
+    setDeadline("");
+    setPoints("");
+    setSearchTitle("");
+    setSearchResults(null);
+    setError(null);
+  }
+
+  function openCreateForm() {
+    resetForm();
+    setEditingId(null);
+    setShowForm((v) => (v && editingId === null ? false : true));
+  }
+
+  function openEditForm(c: Challenge) {
+    setSemesterId(c.semester_id);
+    setPlatformId(c.platform_id);
+    setWeekNumber(c.week_number);
+    setTitle(c.title);
+    setCategory(c.category ?? "");
+    setDifficulty(c.difficulty ?? "");
+    setExternalChallengeId(c.external_challenge_id ?? "");
+    setExternalUrl(c.external_url ?? "");
+    setPresenterId(c.presenter_id ?? "");
+    setDeadline(toLocalInputValue(c.deadline_at));
+    setPoints(c.points ?? "");
+    setSearchTitle("");
+    setSearchResults(null);
+    setError(null);
+    setEditingId(c.id);
+    setShowForm(true);
+  }
+
+  async function searchRootMe() {
+    if (!platformId || !searchTitle.trim()) {
+      setLookupStatus("Pick a platform and enter a title to search first");
+      return;
+    }
+    setSearching(true);
+    setSearchResults(null);
+    try {
+      const results = await api.get<ChallengeSearchResult[]>(
+        `/api/v1/platforms/${platformId}/challenge-search?title=${encodeURIComponent(searchTitle)}`
+      );
+      setSearchResults(results);
+      if (results.length === 0) setLookupStatus("No matches — try a different title, or enter the ID manually below");
+    } catch (err) {
+      setLookupStatus(err instanceof ApiError ? err.message : "Search failed");
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  function pickSearchResult(r: ChallengeSearchResult) {
+    setExternalChallengeId(r.external_challenge_id);
+    if (r.title) setTitle(r.title);
+    if (r.category) setCategory(r.category);
+    if (r.url) {
+      if (!r.url.startsWith(OFFICIAL_ROOTME_HOST) && !confirm(`This URL isn't on root-me.org (${r.url}). Use it anyway?`)) {
+        // keep whatever URL was already there
+      } else {
+        setExternalUrl(r.url);
+      }
+    }
+    setSearchResults(null);
+    setLookupStatus(`Selected "${r.title}" (id ${r.external_challenge_id}) — review before saving`);
+  }
+
   async function lookupFromRootMe() {
     if (!platformId || !externalChallengeId.trim()) {
       setLookupStatus("Pick a platform and enter a Root Me challenge ID first");
@@ -93,36 +181,44 @@ export default function ChallengesPage() {
     }
   }
 
-  async function onCreate(e: FormEvent) {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
+    const payload = {
+      semester_id: semesterId,
+      platform_id: platformId,
+      week_number: weekNumber,
+      title,
+      category: category || null,
+      difficulty: difficulty || null,
+      external_challenge_id: externalChallengeId || null,
+      external_url: externalUrl || null,
+      presenter_id: presenterId || null,
+      deadline_at: new Date(deadline).toISOString(),
+      points: points === "" ? null : points,
+    };
     try {
-      await api.post("/api/v1/challenges", {
-        semester_id: semesterId,
-        platform_id: platformId,
-        week_number: weekNumber,
-        title,
-        category: category || null,
-        difficulty: difficulty || null,
-        external_challenge_id: externalChallengeId || null,
-        presenter_id: presenterId || null,
-        deadline_at: new Date(deadline).toISOString(),
-        points: points === "" ? null : points,
-      });
-      setTitle("");
-      setCategory("");
-      setDifficulty("");
-      setExternalChallengeId("");
-      setLookupStatus("");
-      setPresenterId("");
-      setDeadline("");
-      setPoints("");
+      if (editingId) {
+        const existing = challenges.find((c) => c.id === editingId);
+        if (existing?.external_challenge_id && existing.external_challenge_id !== externalChallengeId) {
+          if (!confirm("Changing the Root Me association may affect future automatic sync matching. Continue?")) {
+            setSubmitting(false);
+            return;
+          }
+        }
+        await api.patch(`/api/v1/challenges/${editingId}`, payload);
+        pushToast("success", `${title} updated`);
+      } else {
+        await api.post("/api/v1/challenges", payload);
+        pushToast("success", `${title} added`);
+      }
+      resetForm();
       setShowForm(false);
+      setEditingId(null);
       await load();
-      pushToast("success", `${title} added`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to create challenge");
+      setError(err instanceof ApiError ? err.message : "Failed to save challenge");
     } finally {
       setSubmitting(false);
     }
@@ -140,7 +236,7 @@ export default function ChallengesPage() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-semibold">Challenges</h1>
         {canManage && semesters.length > 0 && (
-          <Button onClick={() => setShowForm((v) => !v)}>{showForm ? "Cancel" : "New Challenge"}</Button>
+          <Button onClick={openCreateForm}>{showForm ? "Cancel" : "New Challenge"}</Button>
         )}
       </div>
 
@@ -151,10 +247,10 @@ export default function ChallengesPage() {
       {canManage && showForm && (
         <Card>
           <CardHeader>
-            <CardTitle>New Challenge</CardTitle>
+            <CardTitle>{editingId ? "Edit Challenge" : "New Challenge"}</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={onCreate} className="space-y-4">
+            <form onSubmit={onSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="semester">Semester</Label>
@@ -189,22 +285,70 @@ export default function ChallengesPage() {
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="extId">Root Me challenge ID (optional)</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="extId"
-                    placeholder="e.g. 42"
-                    value={externalChallengeId}
-                    onChange={(e) => setExternalChallengeId(e.target.value)}
-                  />
-                  <Button type="button" variant="outline" disabled={lookingUp} onClick={lookupFromRootMe}>
-                    {lookingUp ? "Fetching…" : "Fetch from Root Me"}
-                  </Button>
+              <div className="rounded-md border border-[var(--border)] p-3 space-y-3">
+                <div>
+                  <Label htmlFor="searchTitle">Search Root Me by title</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="searchTitle"
+                      placeholder="e.g. Buffer Overflow"
+                      value={searchTitle}
+                      onChange={(e) => setSearchTitle(e.target.value)}
+                    />
+                    <Button type="button" variant="outline" disabled={searching} onClick={searchRootMe}>
+                      {searching ? "Searching…" : "Search"}
+                    </Button>
+                  </div>
                 </div>
-                {lookupStatus && <p className="mt-1 text-xs text-muted">{lookupStatus}</p>}
-                <p className="mt-1 text-xs text-muted">
-                  Required for auto-sync (Phase 3) to match this Challenge against a member&apos;s solved challenges.
+                {searchResults && searchResults.length > 0 && (
+                  <div className="space-y-1.5">
+                    {searchResults.map((r) => (
+                      <button
+                        type="button"
+                        key={r.external_challenge_id}
+                        onClick={() => pickSearchResult(r)}
+                        className="flex w-full items-center justify-between rounded-md border border-[var(--border)] px-3 py-2 text-left text-sm hover:border-accent hover:bg-[var(--surface-hover)]"
+                      >
+                        <span>
+                          <span className="font-semibold">{r.title ?? "(untitled)"}</span>{" "}
+                          <span className="text-muted">
+                            {r.category ? `· ${r.category}` : ""} {r.language ? `· ${r.language}` : ""}
+                          </span>
+                        </span>
+                        <span className="font-data text-xs text-muted">#{r.external_challenge_id}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div>
+                  <Label htmlFor="extId">Root Me challenge ID (or enter manually)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="extId"
+                      placeholder="e.g. 42"
+                      value={externalChallengeId}
+                      onChange={(e) => setExternalChallengeId(e.target.value)}
+                    />
+                    <Button type="button" variant="outline" disabled={lookingUp} onClick={lookupFromRootMe}>
+                      {lookingUp ? "Fetching…" : "Fetch by ID"}
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="extUrl">Root Me challenge URL (optional)</Label>
+                  <Input
+                    id="extUrl"
+                    type="url"
+                    placeholder="https://www.root-me.org/en/Challenges/..."
+                    value={externalUrl}
+                    onChange={(e) => setExternalUrl(e.target.value)}
+                  />
+                </div>
+                {lookupStatus && <p className="text-xs text-muted">{lookupStatus}</p>}
+                <p className="text-xs text-muted">
+                  The Root Me ID is required for auto-sync to match this Challenge against a member&apos;s solved
+                  challenges. Search results are prefilled from Root Me — review before saving.
                 </p>
               </div>
 
@@ -259,7 +403,7 @@ export default function ChallengesPage() {
 
               {error && <p className="text-sm text-[var(--status-missing)]">{error}</p>}
               <Button type="submit" disabled={submitting}>
-                {submitting ? "Creating…" : "Create Challenge"}
+                {submitting ? "Saving…" : editingId ? "Save changes" : "Create Challenge"}
               </Button>
             </form>
           </CardContent>
@@ -276,6 +420,7 @@ export default function ChallengesPage() {
                 <th>Semester</th>
                 <th>Presenter</th>
                 <th>Deadline</th>
+                <th />
                 {canManage && <th />}
               </tr>
             </thead>
@@ -287,8 +432,24 @@ export default function ChallengesPage() {
                   <td className="text-muted">{semesterName(c.semester_id)}</td>
                   <td className="text-muted">{presenterName(c.presenter_id)}</td>
                   <td className="font-data text-muted">{toLocalInputValue(c.deadline_at).replace("T", " ")}</td>
+                  <td>
+                    {c.external_url && (
+                      <a
+                        href={c.external_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Open in Root Me"
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
+                      >
+                        <ExternalLink size={13} /> Root Me
+                      </a>
+                    )}
+                  </td>
                   {canManage && (
-                    <td className="text-right">
+                    <td className="text-right whitespace-nowrap space-x-1.5">
+                      <Button variant="outline" onClick={() => openEditForm(c)}>
+                        Edit
+                      </Button>
                       <Button variant="destructive" onClick={() => remove(c)}>
                         Delete
                       </Button>
@@ -298,7 +459,7 @@ export default function ChallengesPage() {
               ))}
               {challenges.length === 0 && (
                 <tr>
-                  <td colSpan={canManage ? 6 : 5} className="py-6 text-center text-muted">
+                  <td colSpan={canManage ? 7 : 6} className="py-6 text-center text-muted">
                     No challenges yet.
                   </td>
                 </tr>
