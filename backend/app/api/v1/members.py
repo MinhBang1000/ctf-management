@@ -16,6 +16,7 @@ from app.schemas.member import (
     MemberUpdate,
     PlatformAccountIn,
     PlatformAccountOut,
+    TransferOwnershipRequest,
 )
 from app.services.audit_service import record_audit
 from app.services.member_service import LastLabLeaderError, assert_not_last_lab_leader
@@ -187,6 +188,61 @@ def reset_member_password(
     db.commit()
     db.refresh(member)
     return member
+
+
+@router.post("/{member_id}/transfer-ownership", response_model=MemberOut)
+def transfer_ownership(
+    member_id: uuid.UUID,
+    payload: TransferOwnershipRequest,
+    db: Session = Depends(get_db),
+    current: Member = Depends(require_roles(MemberRole.LAB_LEADER)),
+):
+    """§15 — hand primary Lab Leader responsibility to another active
+    Member. Promotes the target first, then (only if requested) demotes
+    the initiator — in that order, so assert_not_last_lab_leader always
+    sees at least the newly-promoted Leader before it ever has to allow
+    stepping the initiator down."""
+    if not payload.confirm:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ownership transfer requires explicit confirmation")
+
+    target = _member_query(db, current.tenant_id).filter(Member.id == member_id).first()
+    if not target:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
+    if target.id == current.id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot transfer ownership to yourself")
+    if not target.active:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot transfer ownership to an inactive Member")
+
+    was_already_leader = target.role == MemberRole.LAB_LEADER
+    target.role = MemberRole.LAB_LEADER
+
+    if payload.demote_self_to is not None:
+        try:
+            assert_not_last_lab_leader(db, current)
+        except LastLabLeaderError as exc:
+            # Unreachable in practice (target is now a Leader too, in this
+            # same transaction) unless demote_self_to somehow targeted the
+            # very Member being promoted — kept as a hard backstop, not a
+            # normal user-facing path.
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        current.role = payload.demote_self_to
+
+    record_audit(
+        db,
+        tenant_id=current.tenant_id,
+        actor=current,
+        action="lab.ownership_transferred",
+        summary=(
+            f"{current.email} transferred Lab Leader ownership to {target.email}"
+            + (f" (self demoted to {payload.demote_self_to.value})" if payload.demote_self_to else "")
+            + (" (was already a Leader)" if was_already_leader else "")
+        ),
+        target_type="member",
+        target_id=target.id,
+    )
+    db.commit()
+    db.refresh(target)
+    return target
 
 
 @router.delete("/{member_id}", status_code=status.HTTP_204_NO_CONTENT)

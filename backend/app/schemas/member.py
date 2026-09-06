@@ -39,6 +39,16 @@ class MemberResetPasswordRequest(BaseModel):
     new_password: str = Field(min_length=8)
 
 
+class TransferOwnershipRequest(BaseModel):
+    # §15 — explicit confirmation as a real field (not just a frontend
+    # confirm() dialog), same pattern as ResendReportRequest.confirm.
+    confirm: bool = False
+    # None = stay a co-Lab-Leader alongside the newly-promoted one;
+    # otherwise the initiator steps down to this role once the promotion
+    # has happened (always safe by then — see assert_not_last_lab_leader).
+    demote_self_to: MemberRole | None = None
+
+
 
 
 class MemberOut(BaseModel):

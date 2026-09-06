@@ -8,6 +8,7 @@ from app.api.v1 import auth as v1_auth
 from app.api.v1 import automation as v1_automation
 from app.api.v1 import challenges as v1_challenges
 from app.api.v1 import dashboard as v1_dashboard
+from app.api.v1 import data_export as v1_data_export
 from app.api.v1 import me as v1_me
 from app.api.v1 import members as v1_members
 from app.api.v1 import notifications as v1_notifications
@@ -44,6 +45,7 @@ app.include_router(v1_challenges.router, prefix="/api/v1")
 app.include_router(v1_progress.router, prefix="/api/v1")
 app.include_router(v1_platforms.router, prefix="/api/v1")
 app.include_router(v1_dashboard.router, prefix="/api/v1")
+app.include_router(v1_data_export.router, prefix="/api/v1")
 app.include_router(v1_reports.router, prefix="/api/v1")
 app.include_router(v1_settings.router, prefix="/api/v1")
 

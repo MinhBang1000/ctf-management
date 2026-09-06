@@ -71,6 +71,20 @@ def enable_email_lookup_now(session: Session) -> None:
     session.execute(text("SET LOCAL app.is_email_lookup = 'true'"))
 
 
+def enable_super_admin_now(session: Session) -> None:
+    """One-shot version of bind_super_admin_context, for the CURRENT
+    transaction only — see enable_email_lookup_now's docstring."""
+    session.execute(text("SET LOCAL app.is_super_admin = 'true'"))
+
+
+def enable_tenant_context_now(session: Session, tenant_id: uuid.UUID | str) -> None:
+    """One-shot version of bind_tenant_context, for the CURRENT
+    transaction only — see enable_email_lookup_now's docstring for why a
+    Super Admin endpoint that already ran an earlier query (e.g. loading
+    the Tenant row itself) needs this instead of the sticky binder."""
+    session.execute(text("SET LOCAL app.current_tenant_id = :tid"), {"tid": str(tenant_id)})
+
+
 @contextmanager
 def tenant_session(tenant_id: uuid.UUID | str) -> Generator[Session, None, None]:
     """The Celery-task equivalent of what get_current_member does for HTTP
