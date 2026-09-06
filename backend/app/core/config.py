@@ -22,6 +22,15 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 12
 
     CORS_ORIGINS: str = "http://localhost:3000"
+    # §2 forgot-password: base URL used to build the reset link in the
+    # email (e.g. "{PUBLIC_APP_URL}/reset-password?token=..."). Kept
+    # separate from CORS_ORIGINS (an allow-list, not necessarily ordered
+    # or singular) even though they hold the same value in this project's
+    # single-frontend deployment.
+    PUBLIC_APP_URL: str = "http://localhost:3000"
+
+    # §2 — how long a forgot-password reset link/token stays valid.
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 30
 
     SUPER_ADMIN_BOOTSTRAP_EMAIL: str | None = None
     SUPER_ADMIN_BOOTSTRAP_PASSWORD: str | None = None

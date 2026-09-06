@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, String, Text
+from sqlalchemy import Date, DateTime, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -10,6 +10,16 @@ from app.db.base import Base
 
 class Report(Base):
     __tablename__ = "reports"
+    # §9 — DB-level weekly-report idempotency guard: one report per
+    # (tenant, semester, type, period). Kept in the model, not just the
+    # migration, so autogenerate doesn't see it as drift on the next
+    # `alembic revision --autogenerate` and try to drop it.
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", "semester_id", "type", "period_start", "period_end",
+            name="uq_report_tenant_semester_type_period",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID] = mapped_column(

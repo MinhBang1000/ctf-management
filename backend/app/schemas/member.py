@@ -30,8 +30,15 @@ class MemberCreate(BaseModel):
 
 class MemberUpdate(BaseModel):
     full_name: str | None = None
+    email: EmailStr | None = None
     role: MemberRole | None = None
     active: bool | None = None
+
+
+class MemberResetPasswordRequest(BaseModel):
+    new_password: str = Field(min_length=8)
+
+
 
 
 class MemberOut(BaseModel):

@@ -6,6 +6,7 @@ from app.api.admin import labs as admin_labs
 from app.api.v1 import auth as v1_auth
 from app.api.v1 import challenges as v1_challenges
 from app.api.v1 import dashboard as v1_dashboard
+from app.api.v1 import me as v1_me
 from app.api.v1 import members as v1_members
 from app.api.v1 import platforms as v1_platforms
 from app.api.v1 import progress as v1_progress
@@ -31,6 +32,7 @@ app.include_router(admin_labs.router)
 # Lab-scoped API: every route resolves tenant_id from the verified JWT.
 app.include_router(v1_auth.router, prefix="/api/v1")
 app.include_router(v1_members.router, prefix="/api/v1")
+app.include_router(v1_me.router, prefix="/api/v1")
 app.include_router(v1_semesters.router, prefix="/api/v1")
 app.include_router(v1_challenges.router, prefix="/api/v1")
 app.include_router(v1_progress.router, prefix="/api/v1")

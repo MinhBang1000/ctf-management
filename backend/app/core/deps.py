@@ -55,6 +55,11 @@ def get_current_member(
     member = db.get(Member, uuid.UUID(payload["sub"]))
     if not member or not member.active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Account not found or inactive")
+    # §2 — a password change/reset bumps token_version; any JWT issued
+    # before that (this one included, if it predates the bump) must stop
+    # working immediately, not just at its natural expiry.
+    if payload.get("tv") != member.token_version:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session invalidated, please sign in again")
     return member
 
 

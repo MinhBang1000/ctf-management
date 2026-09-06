@@ -52,6 +52,25 @@ def bind_password_reset_lookup_context(session: Session) -> None:
     _bind_session_var(session, "SET LOCAL app.is_password_reset_lookup = 'true'")
 
 
+def enable_email_lookup_now(session: Session) -> None:
+    """One-shot version of bind_email_lookup_context, for the CURRENT
+    transaction only — not the next one.
+
+    bind_email_lookup_context's after_begin hook only fires when a new
+    transaction/savepoint *begins*; at login and create_lab it works
+    because it's the first thing that happens on a fresh session, before
+    that request's transaction has started. Anywhere else — e.g. a
+    duplicate-email check inside an update endpoint, where
+    get_current_member's own earlier query already opened the
+    transaction — the hook registers too late to affect the check that
+    needs it right now, and the bypass silently doesn't apply (RLS hides
+    the very rows the check needs to see, so it reports "no duplicate"
+    and lets the DB's own constraint raise an uncaught IntegrityError on
+    commit instead). Use this version for exactly that mid-request case.
+    """
+    session.execute(text("SET LOCAL app.is_email_lookup = 'true'"))
+
+
 @contextmanager
 def tenant_session(tenant_id: uuid.UUID | str) -> Generator[Session, None, None]:
     """The Celery-task equivalent of what get_current_member does for HTTP
