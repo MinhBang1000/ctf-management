@@ -184,6 +184,8 @@ def run_sync_for_platform(db: Session, tenant_id: uuid.UUID, platform: Platform)
             status="ok" if not errors else "partial_error",
             members_checked=len(accounts),
             errors="; ".join(errors) if errors else None,
+            updated_count=len(updated),
+            conflicts_count=len(conflicts),
         )
     )
     db.commit()

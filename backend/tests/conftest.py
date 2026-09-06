@@ -96,6 +96,13 @@ def set_tenant_context(db: Session, tenant_id) -> None:
     db.execute(text("SET LOCAL app.current_tenant_id = :tid"), {"tid": str(tenant_id)})
 
 
+def set_super_admin_context(db: Session) -> None:
+    """One-shot equivalent of app.db.session.bind_super_admin_context, for
+    the CURRENT transaction only — see set_tenant_context's docstring for
+    why factories/tests need the one-shot form instead of the sticky one."""
+    db.execute(text("SET LOCAL app.is_super_admin = 'true'"))
+
+
 def make_tenant(db: Session, name: str = "Test Lab", slug: str | None = None, is_active: bool = True) -> Tenant:
     tenant = Tenant(name=name, slug=slug or f"test-{uuid.uuid4().hex[:8]}", is_active=is_active)
     db.add(tenant)

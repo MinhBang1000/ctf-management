@@ -18,6 +18,7 @@ from app.models.password_reset_token import PasswordResetToken
 from app.models.notification import Notification
 from app.models.report_send_attempt import ReportSendAttempt
 from app.models.tenant_data_job import TenantDataJob
+from app.models.system_job_run_log import SystemJobRunLog
 
 __all__ = [
     "Tenant",
@@ -40,4 +41,5 @@ __all__ = [
     "Notification",
     "ReportSendAttempt",
     "TenantDataJob",
+    "SystemJobRunLog",
 ]

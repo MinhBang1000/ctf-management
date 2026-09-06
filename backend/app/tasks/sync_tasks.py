@@ -143,6 +143,10 @@ def finalize_sync_log_task(results: list[dict], tenant_id: str, platform_id: str
                 status="ok" if not errors else "partial_error",
                 members_checked=len(results),
                 errors="; ".join(errors) if errors else None,
+                # §8 — real counts for the Job History view, not just
+                # buried in `errors` (which never held them anyway).
+                updated_count=sum(len(r.get("updated") or []) for r in results),
+                conflicts_count=sum(len(r.get("conflicts") or []) for r in results),
             )
             db.add(sync_log)
             db.flush()

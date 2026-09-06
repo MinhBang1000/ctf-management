@@ -3,7 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.admin import auth as admin_auth
 from app.api.admin import labs as admin_labs
+from app.api.admin import system as admin_system
 from app.api.v1 import auth as v1_auth
+from app.api.v1 import automation as v1_automation
 from app.api.v1 import challenges as v1_challenges
 from app.api.v1 import dashboard as v1_dashboard
 from app.api.v1 import me as v1_me
@@ -29,9 +31,11 @@ app.add_middleware(
 # Super Admin: fully separate namespace, no tenant_id (PRD §3.2).
 app.include_router(admin_auth.router)
 app.include_router(admin_labs.router)
+app.include_router(admin_system.router)
 
 # Lab-scoped API: every route resolves tenant_id from the verified JWT.
 app.include_router(v1_auth.router, prefix="/api/v1")
+app.include_router(v1_automation.router, prefix="/api/v1")
 app.include_router(v1_members.router, prefix="/api/v1")
 app.include_router(v1_me.router, prefix="/api/v1")
 app.include_router(v1_notifications.router, prefix="/api/v1")
