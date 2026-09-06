@@ -156,7 +156,11 @@ export default function ChallengesPage() {
       }
     }
     setSearchResults(null);
-    setLookupStatus(`Selected "${r.title}" (id ${r.external_challenge_id}) — review before saving`);
+    // Root Me's search endpoint doesn't return a score, full category
+    // name, or URL (confirmed against the live API) — only the detail
+    // endpoint (below) does, so point the Lab Leader at "Fetch by ID"
+    // next rather than leaving those fields silently blank.
+    setLookupStatus(`Selected "${r.title}" (id ${r.external_challenge_id}) — click "Fetch by ID" below for points/URL, then review before saving`);
   }
 
   async function lookupFromRootMe() {
@@ -173,6 +177,7 @@ export default function ChallengesPage() {
       if (result.title) setTitle(result.title);
       if (result.category) setCategory(result.category);
       if (result.score !== null) setPoints(result.score);
+      if (result.url) setExternalUrl(result.url);
       setLookupStatus("Prefilled from Root Me — review before saving");
     } catch (err) {
       setLookupStatus(err instanceof ApiError ? err.message : "Lookup failed");

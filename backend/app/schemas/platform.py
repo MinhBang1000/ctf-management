@@ -49,6 +49,7 @@ class ChallengeLookupResult(BaseModel):
     title: str | None
     category: str | None
     score: int | None
+    url: str | None = None
 
 
 class ChallengeSearchResultOut(BaseModel):

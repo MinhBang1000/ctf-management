@@ -33,6 +33,11 @@ class ChallengeDetail:
     title: str | None
     category: str | None
     score: int | None
+    # §1 — "Root Me challenge URL" to auto-populate after an ID lookup.
+    # Only set when the platform's own API response documents a URL/path
+    # for the challenge (see RootMeAdapter.get_challenge_detail) — never
+    # constructed from the ID alone.
+    url: str | None = None
 
 
 @dataclass

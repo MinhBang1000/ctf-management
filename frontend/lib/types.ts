@@ -87,6 +87,7 @@ export interface ChallengeLookupResult {
   title: string | null;
   category: string | null;
   score: number | null;
+  url: string | null;
 }
 
 export interface SyncNowResult {

@@ -224,7 +224,7 @@ def challenge_lookup(
         detail = adapter.get_challenge_detail(external_challenge_id)
     except AdapterError as exc:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
-    return ChallengeLookupResult(title=detail.title, category=detail.category, score=detail.score)
+    return ChallengeLookupResult(title=detail.title, category=detail.category, score=detail.score, url=detail.url)
 
 
 @router.get("/{platform_id}/challenge-search", response_model=list[ChallengeSearchResultOut])
