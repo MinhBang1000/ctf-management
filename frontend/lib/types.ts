@@ -70,6 +70,7 @@ export interface Platform {
   is_focus: boolean;
   is_active: boolean;
   has_credentials: boolean;
+  credentials_verified_at: string | null;
 }
 
 export interface TestConnectionResult {
@@ -104,9 +105,18 @@ export interface Challenge {
   category: string | null;
   difficulty: string | null;
   external_challenge_id: string | null;
+  external_url: string | null;
   presenter_id: string | null;
   deadline_at: string;
   points: number | null;
+}
+
+export interface ChallengeSearchResult {
+  external_challenge_id: string;
+  title: string | null;
+  category: string | null;
+  language: string | null;
+  url: string | null;
 }
 
 export interface Progress {
@@ -159,6 +169,92 @@ export interface Report {
   generated_at: string | null;
   sent_at: string | null;
   approved_by: string | null;
+  recipient_email: string | null;
+}
+
+export interface ReportSendAttempt {
+  id: string;
+  attempted_at: string;
+  recipient_email: string;
+  kind: "initial" | "retry" | "resend";
+  status: "success" | "failed";
+  error_detail: string | null;
+  attempted_by_email: string;
+}
+
+export interface Notification {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  target_type: string | null;
+  target_id: string | null;
+  read_at: string | null;
+  dismissed_at: string | null;
+  created_at: string;
+}
+
+export interface SyncRun {
+  id: string;
+  platform_id: string;
+  platform_name: string;
+  run_at: string;
+  status: string;
+  members_checked: number;
+  updated_count: number;
+  conflicts_count: number;
+  errors: string | null;
+}
+
+export interface JobRun {
+  id: string;
+  job_type: string;
+  run_at: string;
+  status: string;
+  detail: string | null;
+}
+
+export interface SystemJobRun {
+  id: string;
+  job_type: string;
+  run_at: string;
+  status: string;
+  detail: string | null;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  tenant_id: string | null;
+  actor_type: string;
+  actor_label: string;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  summary: string;
+  created_at: string;
+}
+
+export interface DeletionPreview {
+  tenant_name: string;
+  member_count: number;
+  semester_count: number;
+  challenge_count: number;
+  progress_count: number;
+  report_count: number;
+  platform_count: number;
+}
+
+export interface TenantDataJob {
+  id: string;
+  tenant_id: string;
+  job_type: "export" | "backup" | "restore";
+  status: string;
+  format_version: string;
+  requested_by_email: string;
+  downloaded_at: string | null;
+  error_detail: string | null;
+  created_at: string;
+  completed_at: string | null;
 }
 
 export interface SMTPConfig {
