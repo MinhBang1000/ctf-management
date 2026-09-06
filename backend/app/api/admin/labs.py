@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.deps import get_current_super_admin, get_db
 from app.core.security import hash_password
-from app.db.session import bind_email_lookup_context, enable_email_lookup_now, enable_tenant_context_now
+from app.db.session import enable_email_lookup_now, enable_tenant_context_now
 from app.models.challenge import Challenge
 from app.models.member import Member, MemberRole
 from app.models.platform import Platform
@@ -56,13 +56,30 @@ def create_lab(payload: TenantCreate, db: Session = Depends(get_db)):
     # email-uniqueness check is the same category of system-level lookup
     # as login's, so it reuses that same narrow bypass rather than
     # broadening Super Admin's general read access to Members.
-    bind_email_lookup_context(db)
+    #
+    # One-shot, not the sticky bind_email_lookup_context: the slug check
+    # just above already opened this request's transaction, so the sticky
+    # after_begin hook would register too late to affect this query (same
+    # bug class documented on enable_email_lookup_now itself).
+    enable_email_lookup_now(db)
     if db.query(Member).filter(Member.email == payload.lab_leader_email).first():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already in use")
 
     tenant = Tenant(name=payload.name, slug=payload.slug)
     db.add(tenant)
     db.flush()
+
+    # RLS gap fixed here: `members_super_admin_insert`'s WITH CHECK lets
+    # this INSERT itself through, but the ORM also does INSERT ...
+    # RETURNING (to read back `joined_at`'s server_default), and Postgres
+    # evaluates RETURNING against the table's SELECT policy too — which
+    # Super Admin has none of on Members (by design, see above). Setting
+    # tenant context to the Lab we just created satisfies
+    # members_tenant_all for both the INSERT and the implicit RETURNING
+    # SELECT, without needing a SELECT bypass at all. Previously this
+    # raised "new row violates row-level security policy for table
+    # members" on every single Lab creation.
+    enable_tenant_context_now(db, tenant.id)
 
     lab_leader = Member(
         tenant_id=tenant.id,
