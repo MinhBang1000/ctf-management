@@ -30,8 +30,10 @@ from app.core import deps  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
 from app.main import app  # noqa: E402
+from app.models.challenge import Challenge  # noqa: E402
 from app.models.member import Member, MemberRole  # noqa: E402
 from app.models.platform import Platform  # noqa: E402
+from app.models.progress import Progress, ProgressStatus  # noqa: E402
 from app.models.semester import Semester  # noqa: E402
 from app.models.super_admin import SuperAdmin  # noqa: E402
 from app.models.tenant import Tenant  # noqa: E402
@@ -110,6 +112,7 @@ def make_member(
     password: str = "testpass123",
     active: bool = True,
     full_name: str = "Test User",
+    joined_at: datetime | None = None,
 ) -> Member:
     set_tenant_context(db, tenant.id)
     member = Member(
@@ -122,6 +125,12 @@ def make_member(
     )
     db.add(member)
     db.commit()
+    if joined_at is not None:
+        # joined_at is a server_default — set it explicitly post-insert
+        # when a test needs a Member who "joined" at a specific historical
+        # moment (e.g. §13's "active throughout a past semester" fixtures).
+        member.joined_at = joined_at
+        db.commit()
     db.refresh(member)
     return member
 
@@ -171,6 +180,54 @@ def make_semester(
     db.commit()
     db.refresh(semester)
     return semester
+
+
+def make_challenge(
+    db: Session,
+    tenant: Tenant,
+    semester: Semester,
+    platform: Platform,
+    title: str = "Test Challenge",
+    week_number: int = 1,
+    deadline_at: datetime | None = None,
+    points: int | None = 100,
+    presenter_id: uuid.UUID | None = None,
+) -> Challenge:
+    set_tenant_context(db, tenant.id)
+    challenge = Challenge(
+        tenant_id=tenant.id,
+        semester_id=semester.id,
+        platform_id=platform.id,
+        week_number=week_number,
+        title=title,
+        deadline_at=deadline_at or (datetime.now(timezone.utc) + timedelta(days=7)),
+        points=points,
+        presenter_id=presenter_id,
+    )
+    db.add(challenge)
+    db.commit()
+    db.refresh(challenge)
+    return challenge
+
+
+def make_progress(
+    db: Session,
+    member: Member,
+    challenge: Challenge,
+    status: ProgressStatus = ProgressStatus.DONE,
+    completed_at: datetime | None = None,
+) -> Progress:
+    set_tenant_context(db, member.tenant_id)
+    progress = Progress(
+        member_id=member.id,
+        challenge_id=challenge.id,
+        status=status,
+        completed_at=completed_at or datetime.now(timezone.utc),
+    )
+    db.add(progress)
+    db.commit()
+    db.refresh(progress)
+    return progress
 
 
 def make_super_admin(db: Session, email: str | None = None, password: str = "adminpass123") -> SuperAdmin:
