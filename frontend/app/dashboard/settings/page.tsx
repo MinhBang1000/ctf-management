@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/lib/toast-context";
+import { Download } from "lucide-react";
 
 export default function SettingsPage() {
   const me = useMember();
@@ -174,6 +175,26 @@ export default function SettingsPage() {
               </p>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Data export</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted">
+            Download every record for this Lab — Members and their platform associations, Semesters, Challenges,
+            Progress, Reports, and automation history — as a single versioned JSON file. Encrypted credentials
+            (Root Me API key, SMTP password) are never included.
+          </p>
+          <a
+            href="/api/v1/export"
+            onClick={() => pushToast("info", "Preparing export…")}
+            className="inline-flex items-center gap-1.5 rounded-[9px] border border-[var(--border)] px-3.5 py-2 text-[13px] font-semibold hover:border-accent hover:text-accent"
+          >
+            <Download size={13} /> Export this Lab&apos;s data
+          </a>
         </CardContent>
       </Card>
 
