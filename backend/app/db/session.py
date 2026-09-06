@@ -44,6 +44,14 @@ def bind_email_lookup_context(session: Session) -> None:
     _bind_session_var(session, "SET LOCAL app.is_email_lookup = 'true'")
 
 
+def bind_password_reset_lookup_context(session: Session) -> None:
+    """§2 forgot-password: the one step where the caller has a raw reset
+    token but the tenant isn't known yet (can't bind_tenant_context before
+    finding which Member the token belongs to) — same shape as
+    bind_email_lookup_context, narrow and single-purpose."""
+    _bind_session_var(session, "SET LOCAL app.is_password_reset_lookup = 'true'")
+
+
 @contextmanager
 def tenant_session(tenant_id: uuid.UUID | str) -> Generator[Session, None, None]:
     """The Celery-task equivalent of what get_current_member does for HTTP

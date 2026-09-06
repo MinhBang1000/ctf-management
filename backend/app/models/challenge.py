@@ -28,6 +28,10 @@ class Challenge(Base):
     category: Mapped[str | None] = mapped_column(String(100), nullable=True)
     difficulty: Mapped[str | None] = mapped_column(String(50), nullable=True)
     external_challenge_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # §1 — canonical Root Me webpage URL (not the API endpoint), for the
+    # "Open in Root Me" action. Populated from search results when Root Me
+    # provides one, or entered/corrected manually otherwise.
+    external_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     presenter_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("members.id", ondelete="SET NULL"), nullable=True, index=True
     )

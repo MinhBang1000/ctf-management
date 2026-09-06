@@ -30,6 +30,11 @@ class Report(Base):
     # "when was this actually sent" for the audit trail the approve flow
     # needs to preserve.
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # §10 — the exact recipient address delivery actually used, preserved
+    # even if Tenant.professor_email changes afterward. Full attempt-by-
+    # attempt history (incl. failures/retries/resends) lives in
+    # ReportSendAttempt; this is just "who did the successful send go to."
+    recipient_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     # Added in Phase 5: the structured aggregation behind a semester
     # report (per-member stats, weekly trend, platform breakdown),
     # captured once at generation time. PDF/Excel export renders this

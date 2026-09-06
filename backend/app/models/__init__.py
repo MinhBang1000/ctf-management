@@ -13,6 +13,11 @@ from app.models.reminder_log import ReminderLog
 from app.models.report import Report
 from app.models.sync_log import SyncLog
 from app.models.job_run_log import JobRunLog
+from app.models.audit_log import AuditLog
+from app.models.password_reset_token import PasswordResetToken
+from app.models.notification import Notification
+from app.models.report_send_attempt import ReportSendAttempt
+from app.models.tenant_data_job import TenantDataJob
 
 __all__ = [
     "Tenant",
@@ -30,4 +35,9 @@ __all__ = [
     "Report",
     "SyncLog",
     "JobRunLog",
+    "AuditLog",
+    "PasswordResetToken",
+    "Notification",
+    "ReportSendAttempt",
+    "TenantDataJob",
 ]

@@ -1,6 +1,7 @@
 import uuid
+from datetime import datetime
 
-from sqlalchemy import Boolean, ForeignKey, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -23,6 +24,11 @@ class Platform(Base):
     # Encrypted at rest (Fernet, PLATFORM_SECRET_KEY) — e.g. {"api_key": "..."}
     # for the Root Me adapter. Never included in any API response schema.
     auth_config: Mapped[dict | None] = mapped_column(EncryptedJSON, nullable=True)
+    # §7 — set only by a real successful Test Connection call, never just
+    # by "auth_config is non-empty". Reset to NULL whenever auth_config,
+    # base_url, or adapter_type changes (see update_platform) — no
+    # additional secret is stored here, just the timestamp of proof.
+    credentials_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     @property
     def has_credentials(self) -> bool:
