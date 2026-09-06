@@ -163,6 +163,15 @@ export default function MembersPage() {
     }
   }
 
+  // §14 — client-side mirror of assert_not_last_lab_leader, purely to
+  // disable the button proactively with an explanatory tooltip; the
+  // backend's own transactional check (see member_service.py) remains
+  // the actual enforcement, since this count can race in the UI.
+  function isLastActiveLeader(member: Member): boolean {
+    if (member.role !== "lab_leader" || !member.active) return false;
+    return members.filter((m) => m.role === "lab_leader" && m.active).length <= 1;
+  }
+
   async function toggleActive(member: Member) {
     try {
       await api.patch(`/api/v1/members/${member.id}`, { active: !member.active });
@@ -449,10 +458,20 @@ export default function MembersPage() {
                           Make owner
                         </Button>
                       )}
-                      <Button variant="outline" onClick={() => toggleActive(m)}>
+                      <Button
+                        variant="outline"
+                        disabled={isLastActiveLeader(m)}
+                        title={isLastActiveLeader(m) ? "This is the Lab's last active Lab Leader — promote another Member first" : undefined}
+                        onClick={() => toggleActive(m)}
+                      >
                         {m.active ? "Deactivate" : "Activate"}
                       </Button>
-                      <Button variant="destructive" onClick={() => removeMember(m)}>
+                      <Button
+                        variant="destructive"
+                        disabled={isLastActiveLeader(m)}
+                        title={isLastActiveLeader(m) ? "This is the Lab's last active Lab Leader — promote another Member first" : undefined}
+                        onClick={() => removeMember(m)}
+                      >
                         Delete
                       </Button>
                     </td>
