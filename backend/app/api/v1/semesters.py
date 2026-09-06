@@ -9,6 +9,7 @@ from app.models.semester import Semester
 from app.models.tenant import Tenant
 from app.schemas.report import ReportOut
 from app.schemas.semester import SemesterCreate, SemesterOut, SemesterUpdate
+from app.services.audit_service import record_audit
 from app.services.report_service import generate_semester_report_for_tenant
 
 router = APIRouter(prefix="/semesters", tags=["semesters"])
@@ -33,6 +34,12 @@ def create_semester(
         _query(db, current.tenant_id).update({Semester.is_current: False})
     semester = Semester(tenant_id=current.tenant_id, **payload.model_dump())
     db.add(semester)
+    db.flush()
+    record_audit(
+        db, tenant_id=current.tenant_id, actor=current, action="semester.created",
+        summary=f"Created semester {payload.name!r}" + (" (set current)" if payload.is_current else ""),
+        target_type="semester", target_id=semester.id,
+    )
     db.commit()
     db.refresh(semester)
     return semester
@@ -52,9 +59,17 @@ def update_semester(
     data = payload.model_dump(exclude_unset=True)
     if data.get("is_current"):
         _query(db, current.tenant_id).update({Semester.is_current: False})
+    changes = [f"{k}: {getattr(semester, k)!r} -> {v!r}" for k, v in data.items() if getattr(semester, k) != v]
     for key, value in data.items():
         setattr(semester, key, value)
 
+    if changes:
+        record_audit(
+            db, tenant_id=current.tenant_id, actor=current,
+            action="semester.current_changed" if "is_current" in data else "semester.updated",
+            summary=f"Updated semester {semester.name!r}: " + "; ".join(changes),
+            target_type="semester", target_id=semester.id,
+        )
     db.commit()
     db.refresh(semester)
     return semester
@@ -84,5 +99,9 @@ def delete_semester(
     semester = _query(db, current.tenant_id).filter(Semester.id == semester_id).first()
     if not semester:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Semester not found")
+    record_audit(
+        db, tenant_id=current.tenant_id, actor=current, action="semester.deleted",
+        summary=f"Deleted semester {semester.name!r}", target_type="semester", target_id=semester.id,
+    )
     db.delete(semester)
     db.commit()

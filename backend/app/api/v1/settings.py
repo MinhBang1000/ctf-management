@@ -12,6 +12,7 @@ from app.schemas.settings import (
     SMTPConfigUpdate,
     TenantSettingsOut,
 )
+from app.services.audit_service import record_audit
 from app.services.email_service import EmailConfigError, EmailSendError, send_test_email
 
 router = APIRouter(prefix="/settings", tags=["settings"])
@@ -50,6 +51,11 @@ def update_smtp(
         "from_address": payload.from_address,
         "use_tls": payload.use_tls,
     }
+    record_audit(
+        db, tenant_id=current.tenant_id, actor=current, action="settings.smtp_updated",
+        summary=f"{current.email} updated SMTP settings (host={payload.host!r})", target_type="tenant",
+        target_id=current.tenant_id,
+    )
     db.commit()
     db.refresh(tenant)
     return _smtp_out(tenant)
@@ -63,6 +69,11 @@ def update_professor_email(
 ):
     tenant = db.get(Tenant, current.tenant_id)
     tenant.professor_email = payload.professor_email
+    record_audit(
+        db, tenant_id=current.tenant_id, actor=current, action="settings.professor_email_updated",
+        summary=f"{current.email} set professor email to {payload.professor_email!r}", target_type="tenant",
+        target_id=current.tenant_id,
+    )
     db.commit()
     db.refresh(tenant)
     return TenantSettingsOut(smtp=_smtp_out(tenant), professor_email=tenant.professor_email)
