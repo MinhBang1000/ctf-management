@@ -20,6 +20,7 @@ from app.models.report_send_attempt import ReportSendAttempt
 from app.models.tenant_data_job import TenantDataJob
 from app.models.system_job_run_log import SystemJobRunLog
 from app.models.feedback import PlatformFeedback
+from app.models.automation_settings import TenantAutomationSettings
 
 __all__ = [
     "Tenant",
@@ -44,4 +45,5 @@ __all__ = [
     "TenantDataJob",
     "SystemJobRunLog",
     "PlatformFeedback",
+    "TenantAutomationSettings",
 ]
