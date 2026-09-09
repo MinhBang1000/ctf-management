@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import type { SuperAdminDashboard, SuperAdminMe, Tenant } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -100,9 +101,20 @@ export default function ConsolePage() {
         title="System Console"
         badge="SYSTEM SCOPE"
         rightExtra={
-          <Button variant="outline" onClick={logout}>
-            Sign out
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link href="/console/jobs" className="text-sm font-semibold text-muted hover:text-foreground">
+              System Jobs
+            </Link>
+            <Link href="/console/audit-log" className="text-sm font-semibold text-muted hover:text-foreground">
+              Audit Log
+            </Link>
+            <Link href="/console/feedback" className="text-sm font-semibold text-muted hover:text-foreground">
+              Feedback
+            </Link>
+            <Button variant="outline" onClick={logout}>
+              Sign out
+            </Button>
+          </div>
         }
       />
       <main className="flex-1 px-4 pb-16 pt-5 sm:px-8 sm:pt-7">
@@ -232,7 +244,13 @@ export default function ConsolePage() {
                     </Badge>
                   </td>
                   <td className="font-data text-muted">{new Date(lab.created_at).toLocaleDateString()}</td>
-                  <td className="text-right">
+                  <td className="text-right whitespace-nowrap space-x-1.5">
+                    <Link
+                      href={`/console/labs/${lab.id}`}
+                      className="inline-flex items-center rounded-[9px] border border-[var(--border)] px-3.5 py-2 text-[13px] font-semibold hover:border-accent hover:text-accent"
+                    >
+                      Manage
+                    </Link>
                     <Button variant="outline" onClick={() => toggleActive(lab)}>
                       {lab.is_active ? "Suspend" : "Reactivate"}
                     </Button>

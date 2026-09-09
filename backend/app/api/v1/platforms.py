@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -10,6 +11,7 @@ from app.models.member import Member, MemberRole
 from app.models.platform import Platform
 from app.schemas.platform import (
     ChallengeLookupResult,
+    ChallengeSearchResultOut,
     PlatformCreate,
     PlatformOut,
     PlatformUpdate,
@@ -17,6 +19,7 @@ from app.schemas.platform import (
     SyncNowResult,
     TestConnectionResult,
 )
+from app.services.audit_service import record_audit
 from app.services.sync_service import SyncCooldownError, run_sync_for_platform
 
 router = APIRouter(prefix="/platforms", tags=["platforms"])
@@ -74,8 +77,24 @@ def update_platform(
     # toggle on a generic edit form (PRD §4.1).
     platform = _get_or_404(db, current.tenant_id, platform_id)
     data = payload.model_dump(exclude_unset=True)
+    # §7 — "Invalidate the verification state when API credentials, base
+    # URL, or adapter type change." adapter_type isn't editable via this
+    # endpoint at all (not in PlatformUpdate), so only these two apply.
+    if ("auth_config" in data and data["auth_config"] != platform.auth_config) or (
+        "base_url" in data and data["base_url"] != platform.base_url
+    ):
+        platform.credentials_verified_at = None
     for key, value in data.items():
         setattr(platform, key, value)
+    record_audit(
+        db,
+        tenant_id=current.tenant_id,
+        actor=current,
+        action="platform.updated",
+        summary=f"Updated platform {platform.name} ({', '.join(data.keys())})",
+        target_type="platform",
+        target_id=platform.id,
+    )
     db.commit()
     db.refresh(platform)
     return platform
@@ -97,13 +116,31 @@ def set_focus(
     unconfigured one must be structurally unreachable, not just
     discouraged in the UI."""
     platform = _get_or_404(db, current.tenant_id, platform_id)
-    if not platform.has_credentials:
+    if not platform.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot make this the focus platform: it has no credentials configured yet.",
+            detail="Cannot make this the focus platform: it is inactive.",
+        )
+    # §7 — "Require a successful verification before a platform can become
+    # the focus" supersedes the old has_credentials-only check: a
+    # credential can be present but never actually proven to work (or
+    # proven once, then invalidated by an edit since — see update_platform).
+    if platform.credentials_verified_at is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot make this the focus platform: run Test Connection successfully first.",
         )
     _query(db, current.tenant_id).filter(Platform.id != platform_id).update({Platform.is_focus: False})
     platform.is_focus = True
+    record_audit(
+        db,
+        tenant_id=current.tenant_id,
+        actor=current,
+        action="platform.focus_changed",
+        summary=f"Set {platform.name} as the focus platform",
+        target_type="platform",
+        target_id=platform.id,
+    )
     db.commit()
     db.refresh(platform)
     return platform
@@ -123,6 +160,10 @@ def test_connection(
         adapter.get_user_completed_challenges("1")
     except AdapterError as exc:
         return TestConnectionResult(ok=False, detail=str(exc))
+    # §7 — this timestamp, not "auth_config is non-empty", is what
+    # set_focus actually checks now.
+    platform.credentials_verified_at = datetime.now(timezone.utc)
+    db.commit()
     return TestConnectionResult(ok=True, detail="Connection OK")
 
 
@@ -183,4 +224,28 @@ def challenge_lookup(
         detail = adapter.get_challenge_detail(external_challenge_id)
     except AdapterError as exc:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
-    return ChallengeLookupResult(title=detail.title, category=detail.category, score=detail.score)
+    return ChallengeLookupResult(title=detail.title, category=detail.category, score=detail.score, url=detail.url)
+
+
+@router.get("/{platform_id}/challenge-search", response_model=list[ChallengeSearchResultOut])
+def challenge_search(
+    platform_id: uuid.UUID,
+    title: str = Query(min_length=1),
+    db: Session = Depends(get_db),
+    current: Member = Depends(require_roles(MemberRole.LAB_LEADER)),
+):
+    """§1 — search by title instead of requiring a numeric ID up front.
+    Every call goes through the backend (this endpoint), so the
+    platform's api_key is never exposed to the browser."""
+    platform = _get_or_404(db, current.tenant_id, platform_id)
+    try:
+        adapter = get_adapter(platform)
+        results = adapter.search_challenges(title)
+    except AdapterError as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+    return [
+        ChallengeSearchResultOut(
+            external_challenge_id=r.external_challenge_id, title=r.title, category=r.category, language=r.language, url=r.url
+        )
+        for r in results
+    ]

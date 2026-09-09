@@ -9,6 +9,7 @@ from app.adapters.base import (
     AdapterError,
     AdapterNotFoundError,
     ChallengeDetail,
+    ChallengeSearchResult,
     PlatformAdapter,
     ValidationEntry,
 )
@@ -182,6 +183,60 @@ class RootMeAdapter(PlatformAdapter):
             )
         return result
 
+    def search_challenges(self, title: str) -> list[ChallengeSearchResult]:
+        # CONFIRMED (2026-09-07, live API, real api_key) — GET
+        # /challenges?titre= returns the same "list wrapping one object
+        # with numeric-string keys" shape as /auteurs?nom=, but each
+        # entry's own fields differ from /challenges/{id}'s (the detail
+        # endpoint): {"id_challenge", "id_rubrique", "titre", "lang",
+        # "date_publication", "maj"} — NOT "rubrique"/"langue"/a URL field.
+        # Two real bugs fixed here after checking a live response for
+        # https://www.root-me.org/en/Challenges/Web-Client/CSRF-0-protection
+        # (id_challenge 1019):
+        #   - language was reading "langue" (wrong key; real key is "lang")
+        #     and always silently returned None.
+        #   - category was reading "rubrique" (wrong key; this endpoint has
+        #     no category NAME field at all, only "id_rubrique", a numeric
+        #     category ID — "16" for Web-Client here). Passed through as
+        #     the ID rather than invented as a name: the detail endpoint
+        #     (get_challenge_detail, used by "Fetch by ID") is what returns
+        #     the real name ("Web - Client"), and doing a second API call
+        #     per search RESULT just to resolve a display name isn't worth
+        #     the extra rate-limited round trips for a search-results list.
+        # `url` stays None here (unchanged) — this endpoint truly has no
+        # URL field, unlike the detail endpoint below.
+        try:
+            data = self._get("/challenges", params={"titre": title})
+        except AdapterNotFoundError:
+            return []
+
+        entries: list[dict] = []
+        if isinstance(data, list):
+            if len(data) == 1 and isinstance(data[0], dict) and not data[0].get("id_challenge"):
+                # Looks like /auteurs?nom='s "list wrapping one numeric-
+                # keyed object" shape rather than a flat list of results.
+                entries = [v for v in data[0].values() if isinstance(v, dict)]
+            else:
+                entries = [v for v in data if isinstance(v, dict)]
+        elif isinstance(data, dict):
+            entries = [v for v in data.values() if isinstance(v, dict)]
+
+        results = []
+        for entry in entries:
+            id_challenge = entry.get("id_challenge")
+            if id_challenge is None:
+                continue
+            results.append(
+                ChallengeSearchResult(
+                    external_challenge_id=str(id_challenge),
+                    title=entry.get("titre"),
+                    category=entry.get("id_rubrique"),
+                    language=entry.get("lang"),
+                    url=None,
+                )
+            )
+        return results
+
     def get_challenge_detail(self, external_challenge_id: str) -> ChallengeDetail:
         data = self._get(f"/challenges/{external_challenge_id}")
         if isinstance(data, list):
@@ -191,8 +246,20 @@ class RootMeAdapter(PlatformAdapter):
             score = int(score) if score is not None else None
         except (TypeError, ValueError):
             score = None
+        # CONFIRMED (2026-09-07, live API): unlike /challenges?titre= (see
+        # search_challenges), this detail endpoint DOES document a URL —
+        # "url_challenge": "fr/Challenges/Web-Client/CSRF-0-protection",
+        # a path relative to www.root-me.org (a different host from this
+        # adapter's api.www.root-me.org base_url). Always the French-
+        # locale path regardless of how the platform is configured — Root
+        # Me serves the same challenge under /fr/ and /en/, so this still
+        # resolves to the right page even if the original link a Lab
+        # Leader pastes elsewhere used /en/.
+        url_path = data.get("url_challenge")
+        url = f"https://www.root-me.org/{url_path.lstrip('/')}" if url_path else None
         return ChallengeDetail(
             title=data.get("titre"),
             category=data.get("rubrique"),
             score=score,
+            url=url,
         )

@@ -9,6 +9,7 @@ from app.models.member import Member, MemberRole
 from app.models.platform import Platform
 from app.models.semester import Semester
 from app.schemas.challenge import ChallengeCreate, ChallengeOut, ChallengeUpdate
+from app.services.audit_service import record_audit
 
 router = APIRouter(prefix="/challenges", tags=["challenges"])
 
@@ -49,6 +50,16 @@ def create_challenge(
     _assert_in_tenant(db, current.tenant_id, payload.semester_id, payload.platform_id, payload.presenter_id)
     challenge = Challenge(tenant_id=current.tenant_id, **payload.model_dump())
     db.add(challenge)
+    db.flush()
+    record_audit(
+        db,
+        tenant_id=current.tenant_id,
+        actor=current,
+        action="challenge.created",
+        summary=f"Created challenge {payload.title!r} (week {payload.week_number})",
+        target_type="challenge",
+        target_id=challenge.id,
+    )
     db.commit()
     db.refresh(challenge)
     return challenge
@@ -73,9 +84,31 @@ def update_challenge(
         data.get("platform_id", challenge.platform_id),
         data.get("presenter_id", challenge.presenter_id),
     )
+
+    changes = []
+    rootme_association_changed = False
     for key, value in data.items():
+        old_value = getattr(challenge, key)
+        if old_value == value:
+            continue
+        changes.append(f"{key}: {old_value!r} -> {value!r}")
+        if key == "external_challenge_id":
+            rootme_association_changed = True
         setattr(challenge, key, value)
 
+    if changes:
+        summary = f"Updated challenge {challenge.title!r}: " + "; ".join(changes)
+        if rootme_association_changed:
+            summary += " (Root Me association changed — future sync will match against the new ID)"
+        record_audit(
+            db,
+            tenant_id=current.tenant_id,
+            actor=current,
+            action="challenge.updated",
+            summary=summary,
+            target_type="challenge",
+            target_id=challenge.id,
+        )
     db.commit()
     db.refresh(challenge)
     return challenge
@@ -90,5 +123,14 @@ def delete_challenge(
     challenge = _query(db, current.tenant_id).filter(Challenge.id == challenge_id).first()
     if not challenge:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Challenge not found")
+    record_audit(
+        db,
+        tenant_id=current.tenant_id,
+        actor=current,
+        action="challenge.deleted",
+        summary=f"Deleted challenge {challenge.title!r} (week {challenge.week_number})",
+        target_type="challenge",
+        target_id=challenge.id,
+    )
     db.delete(challenge)
     db.commit()

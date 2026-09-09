@@ -60,6 +60,50 @@ export interface Semester {
   start_date: string;
   end_date: string;
   is_current: boolean;
+  report_trigger_date: string;
+  report_automation_enabled: boolean;
+  report_auto_send: boolean;
+}
+
+export type RepeatKind = "never" | "daily" | "weekly" | "biweekly" | "monthly" | "custom";
+
+export interface RepeatSchedule {
+  enabled: boolean;
+  repeat: RepeatKind;
+  time_of_day: string; // "HH:MM:SS"
+  day_of_week: number | null; // 0=Monday .. 6=Sunday
+  day_of_month: number | null;
+  interval_days: number | null;
+  last_fired_at?: string;
+}
+
+export interface AutomationSettings {
+  reminder: RepeatSchedule;
+  weekly_report: RepeatSchedule;
+  weekly_report_auto_send: boolean;
+  reminder_auto_send: boolean;
+  reminder_subject_template: string | null;
+  reminder_body_template: string | null;
+  default_reminder_subject_template: string;
+  default_reminder_body_template: string;
+}
+
+export type ReminderStatus = "pending" | "sent" | "failed";
+
+export interface PendingReminder {
+  id: string;
+  member_id: string;
+  member_name: string;
+  member_email: string;
+  challenge_id: string;
+  challenge_title: string;
+  milestone: string;
+  status: ReminderStatus;
+  subject: string | null;
+  body: string | null;
+  error_detail: string | null;
+  created_at: string;
+  sent_at: string | null;
 }
 
 export interface Platform {
@@ -70,6 +114,7 @@ export interface Platform {
   is_focus: boolean;
   is_active: boolean;
   has_credentials: boolean;
+  credentials_verified_at: string | null;
 }
 
 export interface TestConnectionResult {
@@ -86,6 +131,7 @@ export interface ChallengeLookupResult {
   title: string | null;
   category: string | null;
   score: number | null;
+  url: string | null;
 }
 
 export interface SyncNowResult {
@@ -104,9 +150,18 @@ export interface Challenge {
   category: string | null;
   difficulty: string | null;
   external_challenge_id: string | null;
+  external_url: string | null;
   presenter_id: string | null;
   deadline_at: string;
   points: number | null;
+}
+
+export interface ChallengeSearchResult {
+  external_challenge_id: string;
+  title: string | null;
+  category: string | null;
+  language: string | null;
+  url: string | null;
 }
 
 export interface Progress {
@@ -159,6 +214,92 @@ export interface Report {
   generated_at: string | null;
   sent_at: string | null;
   approved_by: string | null;
+  recipient_email: string | null;
+}
+
+export interface ReportSendAttempt {
+  id: string;
+  attempted_at: string;
+  recipient_email: string;
+  kind: "initial" | "retry" | "resend";
+  status: "success" | "failed";
+  error_detail: string | null;
+  attempted_by_email: string;
+}
+
+export interface Notification {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  target_type: string | null;
+  target_id: string | null;
+  read_at: string | null;
+  dismissed_at: string | null;
+  created_at: string;
+}
+
+export interface SyncRun {
+  id: string;
+  platform_id: string;
+  platform_name: string;
+  run_at: string;
+  status: string;
+  members_checked: number;
+  updated_count: number;
+  conflicts_count: number;
+  errors: string | null;
+}
+
+export interface JobRun {
+  id: string;
+  job_type: string;
+  run_at: string;
+  status: string;
+  detail: string | null;
+}
+
+export interface SystemJobRun {
+  id: string;
+  job_type: string;
+  run_at: string;
+  status: string;
+  detail: string | null;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  tenant_id: string | null;
+  actor_type: string;
+  actor_label: string;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  summary: string;
+  created_at: string;
+}
+
+export interface DeletionPreview {
+  tenant_name: string;
+  member_count: number;
+  semester_count: number;
+  challenge_count: number;
+  progress_count: number;
+  report_count: number;
+  platform_count: number;
+}
+
+export interface TenantDataJob {
+  id: string;
+  tenant_id: string;
+  job_type: "export" | "backup" | "restore";
+  status: string;
+  format_version: string;
+  requested_by_email: string;
+  downloaded_at: string | null;
+  error_detail: string | null;
+  created_at: string;
+  completed_at: string | null;
 }
 
 export interface SMTPConfig {
@@ -173,4 +314,14 @@ export interface SMTPConfig {
 export interface TenantSettings {
   smtp: SMTPConfig;
   professor_email: string | null;
+}
+
+export interface PlatformFeedbackEntry {
+  id: string;
+  tenant_id: string;
+  tenant_name: string;
+  member_email: string;
+  member_role: string;
+  message: string;
+  created_at: string;
 }

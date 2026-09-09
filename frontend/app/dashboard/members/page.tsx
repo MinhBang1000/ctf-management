@@ -26,6 +26,10 @@ function emptyAccount(defaultPlatformId: string): PlatformAccountDraft {
   return { platform_id: defaultPlatformId, external_username: "", external_user_id: "" };
 }
 
+function toDraft(accounts: Member["platform_accounts"]): PlatformAccountDraft[] {
+  return accounts.map((a) => ({ platform_id: a.platform_id, external_username: a.external_username, external_user_id: a.external_user_id }));
+}
+
 export default function MembersPage() {
   const me = useMember();
   const canManage = me.role === "lab_leader";
@@ -34,6 +38,7 @@ export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null); // §3 — null = "New Member" form, else editing that Member
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -41,9 +46,15 @@ export default function MembersPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<MemberRole>("member");
+  const [active, setActive] = useState(true);
   const [accounts, setAccounts] = useState<PlatformAccountDraft[]>([]);
   const [lookupStatus, setLookupStatus] = useState<Record<number, string>>({});
   const [lookingUp, setLookingUp] = useState<number | null>(null);
+
+  const [resetTargetId, setResetTargetId] = useState<string | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [transferTargetId, setTransferTargetId] = useState<string | null>(null);
+  const [demoteSelfTo, setDemoteSelfTo] = useState("");
 
   async function load() {
     const [m, p] = await Promise.all([
@@ -93,60 +104,141 @@ export default function MembersPage() {
     setEmail("");
     setPassword("");
     setRole("member");
+    setActive(true);
     setAccounts([]);
     setError(null);
   }
 
-  async function onCreate(e: FormEvent) {
+  function openCreateForm() {
+    resetForm();
+    setEditingId(null);
+    setShowForm((v) => (v && editingId === null ? false : true));
+  }
+
+  function openEditForm(member: Member) {
+    setFullName(member.full_name);
+    setEmail(member.email);
+    setPassword("");
+    setRole(member.role);
+    setActive(member.active);
+    setAccounts(toDraft(member.platform_accounts));
+    setError(null);
+    setEditingId(member.id);
+    setShowForm(true);
+  }
+
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
-      await api.post("/api/v1/members", {
-        full_name: fullName,
-        email,
-        password,
-        role,
-        platform_accounts: accounts.filter((a) => a.external_username && a.external_user_id),
-      });
+      if (editingId) {
+        // §3 — profile fields via PATCH, platform accounts via their own
+        // dedicated endpoint (same one the create flow already uses the
+        // shape of), same split the backend itself keeps.
+        await api.patch(`/api/v1/members/${editingId}`, { full_name: fullName, email, role, active });
+        await api.put(
+          `/api/v1/members/${editingId}/platform-accounts`,
+          accounts.filter((a) => a.external_username && a.external_user_id)
+        );
+        pushToast("success", `${fullName} updated`);
+      } else {
+        await api.post("/api/v1/members", {
+          full_name: fullName,
+          email,
+          password,
+          role,
+          platform_accounts: accounts.filter((a) => a.external_username && a.external_user_id),
+        });
+        pushToast("success", `${fullName} added`);
+      }
       resetForm();
       setShowForm(false);
+      setEditingId(null);
       await load();
-      pushToast("success", `${fullName} added`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to create member");
+      setError(err instanceof ApiError ? err.message : "Failed to save member");
     } finally {
       setSubmitting(false);
     }
   }
 
+  // §14 — client-side mirror of assert_not_last_lab_leader, purely to
+  // disable the button proactively with an explanatory tooltip; the
+  // backend's own transactional check (see member_service.py) remains
+  // the actual enforcement, since this count can race in the UI.
+  function isLastActiveLeader(member: Member): boolean {
+    if (member.role !== "lab_leader" || !member.active) return false;
+    return members.filter((m) => m.role === "lab_leader" && m.active).length <= 1;
+  }
+
   async function toggleActive(member: Member) {
-    await api.patch(`/api/v1/members/${member.id}`, { active: !member.active });
-    await load();
-    pushToast("success", member.active ? `${member.full_name} deactivated` : `${member.full_name} activated`);
+    try {
+      await api.patch(`/api/v1/members/${member.id}`, { active: !member.active });
+      await load();
+      pushToast("success", member.active ? `${member.full_name} deactivated` : `${member.full_name} activated`);
+    } catch (err) {
+      pushToast("error", err instanceof ApiError ? err.message : "Failed to update");
+    }
   }
 
   async function removeMember(member: Member) {
     if (!confirm(`Remove ${member.full_name}? This cannot be undone.`)) return;
-    await api.delete(`/api/v1/members/${member.id}`);
-    await load();
-    pushToast("success", `${member.full_name} removed`);
+    try {
+      await api.delete(`/api/v1/members/${member.id}`);
+      await load();
+      pushToast("success", `${member.full_name} removed`);
+    } catch (err) {
+      pushToast("error", err instanceof ApiError ? err.message : "Failed to delete");
+    }
+  }
+
+  async function submitResetPassword(e: FormEvent) {
+    e.preventDefault();
+    if (!resetTargetId) return;
+    try {
+      await api.post(`/api/v1/members/${resetTargetId}/reset-password`, { new_password: resetPassword });
+      pushToast("success", "Password reset — share the new password with them directly");
+      setResetTargetId(null);
+      setResetPassword("");
+    } catch (err) {
+      pushToast("error", err instanceof ApiError ? err.message : "Failed to reset password");
+    }
+  }
+
+  async function submitTransferOwnership(e: FormEvent) {
+    e.preventDefault();
+    if (!transferTargetId) return;
+    const target = members.find((m) => m.id === transferTargetId);
+    if (!confirm(`Transfer Lab Leader ownership to ${target?.full_name}?`)) return;
+    try {
+      await api.post(`/api/v1/members/${transferTargetId}/transfer-ownership`, {
+        confirm: true,
+        demote_self_to: demoteSelfTo || null,
+      });
+      pushToast("success", `Ownership transferred to ${target?.full_name}`);
+      setTransferTargetId(null);
+      setDemoteSelfTo("");
+      await load();
+    } catch (err) {
+      pushToast("error", err instanceof ApiError ? err.message : "Failed to transfer ownership");
+    }
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-semibold">Members</h1>
-        {canManage && <Button onClick={() => setShowForm((v) => !v)}>{showForm ? "Cancel" : "New Member"}</Button>}
+        {canManage && <Button onClick={openCreateForm}>{showForm ? "Cancel" : "New Member"}</Button>}
       </div>
 
       {canManage && showForm && (
         <Card>
           <CardHeader>
-            <CardTitle>New Member</CardTitle>
+            <CardTitle>{editingId ? "Edit Member" : "New Member"}</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={onCreate} className="space-y-4">
+            <form onSubmit={onSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="fullName">Full name</Label>
@@ -158,16 +250,18 @@ export default function MembersPage() {
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="password">Temporary password</Label>
-                  <Input
-                    id="password"
-                    required
-                    minLength={8}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
+                {!editingId && (
+                  <div>
+                    <Label htmlFor="password">Temporary password</Label>
+                    <Input
+                      id="password"
+                      required
+                      minLength={8}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                  </div>
+                )}
                 <div>
                   <Label htmlFor="role">Role</Label>
                   <Select id="role" value={role} onChange={(e) => setRole(e.target.value as MemberRole)}>
@@ -176,6 +270,15 @@ export default function MembersPage() {
                     <option value="lab_leader">lab_leader</option>
                   </Select>
                 </div>
+                {editingId && (
+                  <div>
+                    <Label htmlFor="active">Status</Label>
+                    <Select id="active" value={active ? "active" : "inactive"} onChange={(e) => setActive(e.target.value === "active")}>
+                      <option value="active">active</option>
+                      <option value="inactive">inactive</option>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -257,8 +360,48 @@ export default function MembersPage() {
 
               {error && <p className="text-sm text-[var(--status-missing)]">{error}</p>}
               <Button type="submit" disabled={submitting}>
-                {submitting ? "Creating…" : "Create Member"}
+                {submitting ? "Saving…" : editingId ? "Save changes" : "Create Member"}
               </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {canManage && resetTargetId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Reset password for {members.find((m) => m.id === resetTargetId)?.full_name}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={submitResetPassword} className="flex flex-wrap items-end gap-2">
+              <div className="flex-1 min-w-[200px]">
+                <Label htmlFor="resetPassword">New temporary password</Label>
+                <Input id="resetPassword" required minLength={8} value={resetPassword} onChange={(e) => setResetPassword(e.target.value)} />
+              </div>
+              <Button type="submit">Reset</Button>
+              <Button type="button" variant="outline" onClick={() => setResetTargetId(null)}>Cancel</Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {canManage && transferTargetId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Transfer ownership to {members.find((m) => m.id === transferTargetId)?.full_name}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={submitTransferOwnership} className="flex flex-wrap items-end gap-2">
+              <div className="flex-1 min-w-[200px]">
+                <Label htmlFor="demoteSelfTo">Your new role (optional — leave blank to stay a co-Leader)</Label>
+                <Select id="demoteSelfTo" value={demoteSelfTo} onChange={(e) => setDemoteSelfTo(e.target.value)}>
+                  <option value="">Stay Lab Leader</option>
+                  <option value="presenter">Step down to Presenter</option>
+                  <option value="member">Step down to Member</option>
+                </Select>
+              </div>
+              <Button type="submit">Confirm transfer</Button>
+              <Button type="button" variant="outline" onClick={() => setTransferTargetId(null)}>Cancel</Button>
             </form>
           </CardContent>
         </Card>
@@ -303,11 +446,32 @@ export default function MembersPage() {
                     </Badge>
                   </td>
                   {canManage && (
-                    <td className="text-right whitespace-nowrap">
-                      <Button variant="outline" onClick={() => toggleActive(m)}>
+                    <td className="text-right whitespace-nowrap space-x-1.5">
+                      <Button variant="outline" onClick={() => openEditForm(m)}>
+                        Edit
+                      </Button>
+                      <Button variant="outline" onClick={() => setResetTargetId(m.id)}>
+                        Reset password
+                      </Button>
+                      {m.role !== "lab_leader" && m.id !== me.id && (
+                        <Button variant="outline" onClick={() => setTransferTargetId(m.id)}>
+                          Make owner
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        disabled={isLastActiveLeader(m)}
+                        title={isLastActiveLeader(m) ? "This is the Lab's last active Lab Leader — promote another Member first" : undefined}
+                        onClick={() => toggleActive(m)}
+                      >
                         {m.active ? "Deactivate" : "Activate"}
-                      </Button>{" "}
-                      <Button variant="destructive" onClick={() => removeMember(m)}>
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        disabled={isLastActiveLeader(m)}
+                        title={isLastActiveLeader(m) ? "This is the Lab's last active Lab Leader — promote another Member first" : undefined}
+                        onClick={() => removeMember(m)}
+                      >
                         Delete
                       </Button>
                     </td>

@@ -7,26 +7,44 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  BellRing,
+  ClipboardList,
   FileText,
+  History,
   LayoutGrid,
   Link2,
   LogOut,
+  MessageSquarePlus,
   Settings as SettingsIcon,
   Target,
   Users,
 } from "lucide-react";
-import type { MemberMe } from "@/lib/types";
+import type { MemberMe, MemberRole } from "@/lib/types";
 
-export const NAV_ITEMS = [
+// §6 — `roles: undefined` means every role can see it; otherwise only the
+// listed roles. Kept alongside the nav definition itself (not a separate
+// lookup table) so a new page's visibility is defined in exactly one
+// place. The backend's own role checks (require_roles(...) on each
+// endpoint) are the real security boundary — this only controls what's
+// offered in the UI, per §6's "keep backend authorization checks in
+// place even when a page is hidden."
+export const NAV_ITEMS: { href: string; label: string; icon: typeof LayoutGrid; roles?: MemberRole[] }[] = [
   { href: "/dashboard", label: "Overview", icon: LayoutGrid },
   { href: "/dashboard/members", label: "Members", icon: Users },
   { href: "/dashboard/semesters", label: "Semesters", icon: Calendar },
   { href: "/dashboard/challenges", label: "Challenges", icon: Target },
   { href: "/dashboard/progress", label: "Progress", icon: Activity },
   { href: "/dashboard/platforms", label: "Platforms", icon: Link2 },
-  { href: "/dashboard/reports", label: "Reports", icon: FileText },
-  { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
+  { href: "/dashboard/reports", label: "Reports", icon: FileText, roles: ["lab_leader"] },
+  { href: "/dashboard/reminders", label: "Reminders", icon: BellRing, roles: ["lab_leader"] },
+  { href: "/dashboard/automation", label: "Automation", icon: History, roles: ["lab_leader"] },
+  { href: "/dashboard/audit-log", label: "Audit Log", icon: ClipboardList, roles: ["lab_leader"] },
+  { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon, roles: ["lab_leader"] },
 ];
+
+export function visibleNavItems(role: MemberRole) {
+  return NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(role));
+}
 
 function initialsOf(fullName: string) {
   return fullName.split(" ").slice(-2).map((w) => w[0]).join("").toUpperCase();
@@ -80,7 +98,7 @@ export function Sidebar({ member, collapsed, onToggleCollapse, isMobile, mobileO
         </div>
 
         <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2.5">
-          {NAV_ITEMS.map((item) => {
+          {visibleNavItems(member.role).map((item) => {
             const active = pathname === item.href;
             const Icon = item.icon;
             return (
@@ -100,16 +118,35 @@ export function Sidebar({ member, collapsed, onToggleCollapse, isMobile, mobileO
           })}
         </nav>
 
+        <div className="flex-shrink-0 border-t border-[var(--border)] p-2.5">
+          <Link
+            href="/dashboard/feedback"
+            onClick={onCloseMobile}
+            title={effectiveCollapsed ? "Feedback" : undefined}
+            className={`flex w-full items-center gap-3 rounded-[9px] px-2.5 py-2 text-[13.5px] font-semibold transition-colors ${
+              pathname === "/dashboard/feedback" ? "bg-[var(--surface-hover)] text-accent" : "text-foreground hover:bg-[var(--surface-hover)]"
+            } ${effectiveCollapsed ? "justify-center" : ""}`}
+          >
+            <MessageSquarePlus size={20} strokeWidth={1.75} className="flex-shrink-0" />
+            {showLabel && <span className="flex-1 truncate text-left">Feedback</span>}
+          </Link>
+        </div>
+
         <div className={`flex flex-shrink-0 items-center gap-2.5 border-t border-[var(--border)] p-3 ${effectiveCollapsed ? "justify-center" : ""}`}>
-          <div className="flex h-[30px] w-[30px] min-w-[30px] items-center justify-center rounded-lg bg-[var(--surface-hover)] font-mono text-xs font-bold text-accent">
+          <Link
+            href="/dashboard/profile"
+            onClick={onCloseMobile}
+            title="My profile"
+            className="flex h-[30px] w-[30px] min-w-[30px] items-center justify-center rounded-lg bg-[var(--surface-hover)] font-mono text-xs font-bold text-accent"
+          >
             {initialsOf(member.full_name)}
-          </div>
+          </Link>
           {showLabel && (
             <>
-              <div className="flex-1 overflow-hidden">
+              <Link href="/dashboard/profile" onClick={onCloseMobile} className="flex-1 overflow-hidden">
                 <div className="truncate text-[12.5px] font-semibold">{member.full_name}</div>
                 <div className="truncate text-[11px] text-muted capitalize">{member.role.replace("_", " ")}</div>
-              </div>
+              </Link>
               <button
                 onClick={onSignOut}
                 title="Sign out"

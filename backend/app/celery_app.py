@@ -20,17 +20,14 @@ celery_app.conf.update(
             # speed, not accuracy.
             "schedule": settings.SYNC_INTERVAL_MINUTES * 60,
         },
-        "check-reminders": {
-            "task": "app.tasks.reminder_tasks.check_reminders",
-            "schedule": crontab(hour=settings.REMINDER_CHECK_HOUR_UTC, minute=0),
-        },
-        "generate-weekly-reports": {
-            "task": "app.tasks.report_tasks.generate_weekly_reports",
-            "schedule": crontab(
-                hour=settings.WEEKLY_REPORT_HOUR_UTC,
-                minute=0,
-                day_of_week=settings.WEEKLY_REPORT_DAY_OF_WEEK,
-            ),
+        "dispatch-automation": {
+            "task": "app.tasks.automation_dispatcher.dispatch_automation",
+            # Replaces the old system-wide check-reminders/
+            # generate-weekly-reports crontab entries — every active
+            # Tenant now has its own schedule (TenantAutomationSettings),
+            # checked here on each short poll rather than fired directly
+            # by Celery beat on one fixed system-wide cron.
+            "schedule": settings.AUTOMATION_DISPATCH_INTERVAL_SECONDS,
         },
         "run-scheduled-backup": {
             "task": "app.tasks.backup_tasks.run_scheduled_backup",
@@ -43,6 +40,5 @@ celery_app.conf.update(
 # autodiscovery only looks for a module literally named tasks.py per
 # package, which doesn't match app/tasks/sync_tasks.py etc.
 import app.tasks.sync_tasks  # noqa: E402,F401
-import app.tasks.reminder_tasks  # noqa: E402,F401
-import app.tasks.report_tasks  # noqa: E402,F401
+import app.tasks.automation_dispatcher  # noqa: E402,F401
 import app.tasks.backup_tasks  # noqa: E402,F401

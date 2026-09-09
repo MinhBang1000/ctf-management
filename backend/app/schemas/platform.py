@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel, Field
 
@@ -27,6 +28,9 @@ class PlatformOut(BaseModel):
     is_focus: bool
     is_active: bool
     has_credentials: bool
+    # §7 — None means "never verified" or "invalidated by a config
+    # change since the last verification" (see update_platform).
+    credentials_verified_at: datetime | None
 
     model_config = {"from_attributes": True}
 
@@ -45,6 +49,15 @@ class ChallengeLookupResult(BaseModel):
     title: str | None
     category: str | None
     score: int | None
+    url: str | None = None
+
+
+class ChallengeSearchResultOut(BaseModel):
+    external_challenge_id: str
+    title: str | None
+    category: str | None
+    language: str | None
+    url: str | None
 
 
 class SyncNowResult(BaseModel):

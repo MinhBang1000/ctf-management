@@ -22,3 +22,9 @@ class SyncLog(Base):
     status: Mapped[str] = mapped_column(String(50), nullable=False)
     members_checked: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     errors: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # §8 — Job History needs these as real numbers, not just buried inside
+    # the free-text `errors` string (which never held them anyway — the
+    # per-member updated/conflicts counts were computed and then thrown
+    # away before this).
+    updated_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    conflicts_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

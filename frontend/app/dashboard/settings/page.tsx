@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
-import type { TenantSettings, TestConnectionResult } from "@/lib/types";
+import type { AutomationSettings, TenantSettings, TestConnectionResult } from "@/lib/types";
 import { useMember } from "@/lib/member-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/lib/toast-context";
+import { Download } from "lucide-react";
+import { RepeatScheduleEditor } from "@/components/automation/repeat-schedule-editor";
 
 export default function SettingsPage() {
   const me = useMember();
@@ -33,8 +35,14 @@ export default function SettingsPage() {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<TestConnectionResult | null>(null);
 
+  const [automation, setAutomation] = useState<AutomationSettings | null>(null);
+  const [savingAutomation, setSavingAutomation] = useState(false);
+
   async function load() {
-    const s = await api.get<TenantSettings>("/api/v1/settings");
+    const [s, a] = await Promise.all([
+      api.get<TenantSettings>("/api/v1/settings"),
+      api.get<AutomationSettings>("/api/v1/settings/automation"),
+    ]);
     setSettings(s);
     setHost(s.smtp.host ?? "");
     setPort(s.smtp.port ?? 587);
@@ -42,6 +50,21 @@ export default function SettingsPage() {
     setFromAddress(s.smtp.from_address ?? "");
     setUseTls(s.smtp.use_tls ?? true);
     setProfessorEmail(s.professor_email ?? "");
+    setAutomation(a);
+  }
+
+  async function saveAutomation() {
+    if (!automation) return;
+    setSavingAutomation(true);
+    try {
+      const updated = await api.patch<AutomationSettings>("/api/v1/settings/automation", automation);
+      setAutomation(updated);
+      pushToast("success", "Automation settings saved");
+    } catch (err) {
+      pushToast("error", err instanceof ApiError ? err.message : "Failed to save automation settings");
+    } finally {
+      setSavingAutomation(false);
+    }
   }
 
   useEffect(() => {
@@ -179,11 +202,32 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Data export</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted">
+            Download every record for this Lab — Members and their platform associations, Semesters, Challenges,
+            Progress, Reports, and automation history — as a single versioned JSON file. Encrypted credentials
+            (Root Me API key, SMTP password) are never included.
+          </p>
+          <a
+            href="/api/v1/export"
+            onClick={() => pushToast("info", "Preparing export…")}
+            className="inline-flex items-center gap-1.5 rounded-[9px] border border-[var(--border)] px-3.5 py-2 text-[13px] font-semibold hover:border-accent hover:text-accent"
+          >
+            <Download size={13} /> Export this Lab&apos;s data
+          </a>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Professor email</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted">
-            Pre-fills the recipient when approving a weekly report — you still confirm it explicitly each time you send.
+            Pre-fills the recipient when approving a report manually, and is also where automation sends a report
+            directly when auto-send is turned on below.
           </p>
           <div className="flex gap-2">
             <Input
@@ -198,6 +242,88 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {automation && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Automation</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <p className="text-sm text-muted">
+              Each schedule runs on its own — turn one off without affecting the other. Semester report has its own
+              trigger date instead, set per-Semester on the Semesters page.
+            </p>
+
+            <div className="space-y-3 border-b border-[var(--border)] pb-6">
+              <Label className="mb-0 text-sm font-bold">Reminders (T-3 / T-1 emails to members)</Label>
+              <RepeatScheduleEditor
+                idPrefix="reminder"
+                value={automation.reminder}
+                onChange={(reminder) => setAutomation({ ...automation, reminder })}
+              />
+              <label className="flex items-center gap-2 pt-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={automation.reminder_auto_send}
+                  onChange={(e) => setAutomation({ ...automation, reminder_auto_send: e.target.checked })}
+                />
+                Send reminders straight to members automatically (uncheck to review/edit each one first at{" "}
+                <a href="/dashboard/reminders" className="underline">
+                  Reminders
+                </a>
+                )
+              </label>
+
+              <div>
+                <Label htmlFor="reminderSubjectTemplate">Custom subject (optional)</Label>
+                <Input
+                  id="reminderSubjectTemplate"
+                  value={automation.reminder_subject_template ?? ""}
+                  placeholder={automation.default_reminder_subject_template}
+                  onChange={(e) => setAutomation({ ...automation, reminder_subject_template: e.target.value || null })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="reminderBodyTemplate">Custom body (optional)</Label>
+                <textarea
+                  id="reminderBodyTemplate"
+                  rows={6}
+                  className="w-full rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 font-data text-xs"
+                  value={automation.reminder_body_template ?? ""}
+                  placeholder={automation.default_reminder_body_template}
+                  onChange={(e) => setAutomation({ ...automation, reminder_body_template: e.target.value || null })}
+                />
+                <p className="mt-1 text-xs text-muted">
+                  Leave either blank to keep using the default shown as placeholder text. Available placeholders:{" "}
+                  <code>{"{{ member_name }}"}</code> <code>{"{{ challenge_title }}"}</code>{" "}
+                  <code>{"{{ deadline }}"}</code> <code>{"{{ days_left }}"}</code> <code>{"{{ milestone }}"}</code>
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="mb-0 text-sm font-bold">Weekly report</Label>
+              <RepeatScheduleEditor
+                idPrefix="weekly-report"
+                value={automation.weekly_report}
+                onChange={(weekly_report) => setAutomation({ ...automation, weekly_report })}
+              />
+              <label className="flex items-center gap-2 pt-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={automation.weekly_report_auto_send}
+                  onChange={(e) => setAutomation({ ...automation, weekly_report_auto_send: e.target.checked })}
+                />
+                Auto-send to the professor email above (no review) instead of just notifying me to approve it
+              </label>
+            </div>
+
+            <Button disabled={savingAutomation} onClick={saveAutomation}>
+              {savingAutomation ? "Saving…" : "Save automation settings"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -12,6 +12,23 @@ from app.models.semester import Semester
 from app.models.tenant import Tenant
 
 
+def _participating_members(db: Session, tenant_id, as_of: datetime) -> list[Member]:
+    """§13 — every Member who had joined the Lab by `as_of`, regardless of
+    whether they're active *now*. Filtering by *current* `active` status
+    (the old behavior) is exactly the bug §13 describes: a Member active
+    all semester but deactivated afterward would vanish from a report
+    generated later for that same semester.
+
+    There's no stored history of exactly when each Member was active on
+    any given past date, so `joined_at` is the closest available "was
+    actually part of the Lab at the time" signal — it correctly excludes
+    a genuinely new Member with zero relationship to a historical period
+    (someone who joined well after a semester ended), which is the other
+    half of what §13 requires ("Exclude Members who never participated").
+    """
+    return db.query(Member).filter(Member.tenant_id == tenant_id, Member.joined_at <= as_of).all()
+
+
 def _week_bounds(reference: date, weeks_ago: int) -> tuple[date, date]:
     """Monday-Sunday calendar week containing `reference`, offset back by
     `weeks_ago` weeks. Deliberately calendar-based, not Challenge.week_number
@@ -39,7 +56,34 @@ def generate_weekly_report_for_tenant(db: Session, tenant: Tenant) -> Report | N
     prev_from, prev_to = _day_bounds_utc(prev_start, prev_end)
     curr_from, curr_to = _day_bounds_utc(curr_start, curr_end)
 
-    members = db.query(Member).filter(Member.tenant_id == tenant.id, Member.active.is_(True)).all()
+    semester = (
+        db.query(Semester).filter(Semester.tenant_id == tenant.id, Semester.is_current.is_(True)).first()
+        or db.query(Semester).filter(Semester.tenant_id == tenant.id).order_by(Semester.start_date.desc()).first()
+    )
+    if not semester:
+        return None  # nothing to attach the report to yet
+
+    # §9 — idempotency: never insert a second report for the same
+    # (tenant, semester, type, period) — the DB-level unique constraint
+    # backs this up, but checking here lets a repeated call *update* the
+    # existing draft (still-current numbers) instead of erroring, and
+    # lets an already-sent report come back untouched instead of being
+    # silently overwritten.
+    existing = (
+        db.query(Report)
+        .filter(
+            Report.tenant_id == tenant.id,
+            Report.semester_id == semester.id,
+            Report.type == "weekly",
+            Report.period_start == prev_start,
+            Report.period_end == prev_end,
+        )
+        .first()
+    )
+    if existing and existing.status == "sent":
+        return existing
+
+    members = _participating_members(db, tenant.id, curr_to)
 
     prev_challenges = (
         db.query(Challenge)
@@ -87,13 +131,6 @@ def generate_weekly_report_for_tenant(db: Session, tenant: Tenant) -> Report | N
             if progress and progress.status == ProgressStatus.EARLY:
                 early_items.append({"member_name": member.full_name, "challenge_title": challenge.title})
 
-    semester = (
-        db.query(Semester).filter(Semester.tenant_id == tenant.id, Semester.is_current.is_(True)).first()
-        or db.query(Semester).filter(Semester.tenant_id == tenant.id).order_by(Semester.start_date.desc()).first()
-    )
-    if not semester:
-        return None  # nothing to attach the report to yet
-
     content = render_template(
         "weekly_report_email.txt.j2",
         tenant_name=tenant.name,
@@ -110,6 +147,16 @@ def generate_weekly_report_for_tenant(db: Session, tenant: Tenant) -> Report | N
         late_items=late_items,
         missing_items=missing_items,
     )
+
+    if existing:
+        # existing.status == "draft" here (the "sent" case already
+        # returned above) — refresh it in place rather than inserting a
+        # second row for the same period.
+        existing.content = content
+        existing.generated_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(existing)
+        return existing
 
     report = Report(
         tenant_id=tenant.id,
@@ -140,8 +187,9 @@ def compute_semester_report_data(db: Session, tenant: Tenant, semester: Semester
     never changes retroactively (PRD design principle #6), so grouping by
     it directly is suffient — no separate "focus history" table needed.
     """
-    members = (
-        db.query(Member).filter(Member.tenant_id == tenant.id, Member.active.is_(True)).order_by(Member.full_name).all()
+    members = sorted(
+        _participating_members(db, tenant.id, _day_bounds_utc(semester.end_date, semester.end_date)[1]),
+        key=lambda m: m.full_name,
     )
     challenges = (
         db.query(Challenge).filter(Challenge.semester_id == semester.id).order_by(Challenge.week_number).all()
@@ -238,9 +286,38 @@ def compute_semester_report_data(db: Session, tenant: Tenant, semester: Semester
 def generate_semester_report_for_tenant(db: Session, tenant: Tenant, semester: Semester) -> Report:
     """Manual trigger only (Lab Leader, from Semester Management) — never
     fires automatically on semester end_date, since closing out a
-    semester is an administrative decision (Phase 5 plan)."""
+    semester is an administrative decision (Phase 5 plan).
+
+    Same idempotency contract as generate_weekly_report_for_tenant, for
+    the same DB constraint (uq_report_tenant_semester_type_period, which
+    doesn't distinguish report type): repeated generation refreshes an
+    existing draft in place rather than erroring or duplicating, and an
+    already-sent semester report comes back untouched.
+    """
+    existing = (
+        db.query(Report)
+        .filter(
+            Report.tenant_id == tenant.id,
+            Report.semester_id == semester.id,
+            Report.type == "semester",
+            Report.period_start == semester.start_date,
+            Report.period_end == semester.end_date,
+        )
+        .first()
+    )
+    if existing and existing.status == "sent":
+        return existing
+
     data = compute_semester_report_data(db, tenant, semester)
     content = render_template("semester_report_email.txt.j2", tenant_name=tenant.name, **data)
+
+    if existing:
+        existing.content = content
+        existing.data = data
+        existing.generated_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(existing)
+        return existing
 
     report = Report(
         tenant_id=tenant.id,

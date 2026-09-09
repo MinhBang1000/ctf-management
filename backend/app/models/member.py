@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, func
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -37,6 +37,11 @@ class Member(Base):
     )
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # §2 — bumped on every password change/reset so every JWT issued before
+    # that moment stops working immediately (JWTs are stateless with no
+    # server-side session store otherwise, so this is what "invalidate
+    # existing sessions after a password reset" actually means here).
+    token_version: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     platform_accounts: Mapped[list["MemberPlatformAccount"]] = relationship(
         "MemberPlatformAccount", cascade="all, delete-orphan", passive_deletes=True

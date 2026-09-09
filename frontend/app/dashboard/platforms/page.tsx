@@ -22,6 +22,23 @@ function emptyDraft(p: Platform): DraftState {
   return { name: p.name, baseUrl: p.base_url ?? "", apiKey: "" };
 }
 
+function toLocalString(iso: string) {
+  return new Date(iso).toLocaleString();
+}
+
+// §7 — persisted states are "not configured" / "unverified" / "verified"
+// (credentials_verified_at is cleared server-side whenever the API key or
+// base URL changes — see update_platform). "Verification failed" isn't a
+// column the backend stores (a failed Test Connection just leaves
+// verified_at unset); it's surfaced transiently below from the most
+// recent test-connection response instead — a judgment call since the
+// doc doesn't specify a persisted failure record.
+function verificationBadge(p: Platform) {
+  if (!p.has_credentials) return { label: "not configured", tone: "text-muted" };
+  if (p.credentials_verified_at) return { label: `verified ${toLocalString(p.credentials_verified_at)}`, tone: "text-[var(--status-done)]" };
+  return { label: "unverified", tone: "text-[var(--status-missing)]" };
+}
+
 export default function PlatformsPage() {
   const me = useMember();
   const canManage = me.role === "lab_leader";
@@ -34,7 +51,6 @@ export default function PlatformsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [testResults, setTestResults] = useState<Record<string, TestConnectionResult>>({});
-  const [testedOk, setTestedOk] = useState<Record<string, boolean>>({});
   const [testing, setTesting] = useState<string | null>(null);
 
   const [syncing, setSyncing] = useState<string | null>(null);
@@ -81,8 +97,8 @@ export default function PlatformsPage() {
     try {
       const result = await api.post<TestConnectionResult>(`/api/v1/platforms/${p.id}/test-connection`);
       setTestResults((prev) => ({ ...prev, [p.id]: result }));
-      setTestedOk((prev) => ({ ...prev, [p.id]: result.ok }));
       pushToast(result.ok ? "success" : "error", result.detail);
+      await load(); // refresh credentials_verified_at from the server
     } finally {
       setTesting(null);
     }
@@ -147,9 +163,8 @@ export default function PlatformsPage() {
                   <CardTitle>{p.name}</CardTitle>
                   <Badge>{p.adapter_type}</Badge>
                   {p.is_focus && <Badge className="text-[var(--status-done)]">focus</Badge>}
-                  <Badge className={p.has_credentials ? "text-[var(--status-done)]" : "text-[var(--status-missing)]"}>
-                    {p.has_credentials ? "configured" : "not configured"}
-                  </Badge>
+                  {!p.is_active && <Badge className="text-[var(--status-missing)]">inactive</Badge>}
+                  <Badge className={verificationBadge(p).tone}>{verificationBadge(p).label}</Badge>
                 </div>
                 {canManage && !isEditing && (
                   <Button variant="outline" onClick={() => startEdit(p)}>
@@ -214,8 +229,14 @@ export default function PlatformsPage() {
                       </Button>
                       <Button
                         variant="outline"
-                        disabled={p.is_focus || !testedOk[p.id]}
-                        title={!testedOk[p.id] ? "Run a successful Test connection first" : undefined}
+                        disabled={p.is_focus || !p.is_active || !p.credentials_verified_at}
+                        title={
+                          !p.is_active
+                            ? "Inactive platforms cannot become the focus"
+                            : !p.credentials_verified_at
+                              ? "Run a successful Test connection first"
+                              : undefined
+                        }
                         onClick={() => makeFocus(p)}
                       >
                         {p.is_focus ? "Current focus" : "Make focus"}

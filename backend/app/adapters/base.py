@@ -33,6 +33,25 @@ class ChallengeDetail:
     title: str | None
     category: str | None
     score: int | None
+    # §1 — "Root Me challenge URL" to auto-populate after an ID lookup.
+    # Only set when the platform's own API response documents a URL/path
+    # for the challenge (see RootMeAdapter.get_challenge_detail) — never
+    # constructed from the ID alone.
+    url: str | None = None
+
+
+@dataclass
+class ChallengeSearchResult:
+    """§1 — one match from searching a platform's challenges by name.
+    `url` is the canonical webpage URL when the platform's API provides
+    one — never constructed from the ID unless the platform documents
+    that URL scheme (REQUIRED_FEATURES.md §1)."""
+
+    external_challenge_id: str
+    title: str | None
+    category: str | None
+    language: str | None
+    url: str | None
 
 
 class PlatformAdapter(ABC):
@@ -53,3 +72,11 @@ class PlatformAdapter(ABC):
     @abstractmethod
     def get_challenge_detail(self, external_challenge_id: str) -> ChallengeDetail:
         """Metadata for one challenge, used to prefill Challenge forms."""
+
+    @abstractmethod
+    def search_challenges(self, title: str) -> list[ChallengeSearchResult]:
+        """§1 — every challenge whose title matches `title` (platform-
+        defined match rules — exact, substring, or fuzzy), so the Lab
+        Leader can pick the right one instead of needing its numeric ID
+        up front. Returns an empty list for no matches, never raises for
+        that case specifically."""

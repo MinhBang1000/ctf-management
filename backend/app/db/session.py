@@ -44,6 +44,47 @@ def bind_email_lookup_context(session: Session) -> None:
     _bind_session_var(session, "SET LOCAL app.is_email_lookup = 'true'")
 
 
+def bind_password_reset_lookup_context(session: Session) -> None:
+    """§2 forgot-password: the one step where the caller has a raw reset
+    token but the tenant isn't known yet (can't bind_tenant_context before
+    finding which Member the token belongs to) — same shape as
+    bind_email_lookup_context, narrow and single-purpose."""
+    _bind_session_var(session, "SET LOCAL app.is_password_reset_lookup = 'true'")
+
+
+def enable_email_lookup_now(session: Session) -> None:
+    """One-shot version of bind_email_lookup_context, for the CURRENT
+    transaction only — not the next one.
+
+    bind_email_lookup_context's after_begin hook only fires when a new
+    transaction/savepoint *begins*; at login and create_lab it works
+    because it's the first thing that happens on a fresh session, before
+    that request's transaction has started. Anywhere else — e.g. a
+    duplicate-email check inside an update endpoint, where
+    get_current_member's own earlier query already opened the
+    transaction — the hook registers too late to affect the check that
+    needs it right now, and the bypass silently doesn't apply (RLS hides
+    the very rows the check needs to see, so it reports "no duplicate"
+    and lets the DB's own constraint raise an uncaught IntegrityError on
+    commit instead). Use this version for exactly that mid-request case.
+    """
+    session.execute(text("SET LOCAL app.is_email_lookup = 'true'"))
+
+
+def enable_super_admin_now(session: Session) -> None:
+    """One-shot version of bind_super_admin_context, for the CURRENT
+    transaction only — see enable_email_lookup_now's docstring."""
+    session.execute(text("SET LOCAL app.is_super_admin = 'true'"))
+
+
+def enable_tenant_context_now(session: Session, tenant_id: uuid.UUID | str) -> None:
+    """One-shot version of bind_tenant_context, for the CURRENT
+    transaction only — see enable_email_lookup_now's docstring for why a
+    Super Admin endpoint that already ran an earlier query (e.g. loading
+    the Tenant row itself) needs this instead of the sticky binder."""
+    session.execute(text("SET LOCAL app.current_tenant_id = :tid"), {"tid": str(tenant_id)})
+
+
 @contextmanager
 def tenant_session(tenant_id: uuid.UUID | str) -> Generator[Session, None, None]:
     """The Celery-task equivalent of what get_current_member does for HTTP

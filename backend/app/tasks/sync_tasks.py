@@ -13,6 +13,7 @@ from app.models.platform import Platform
 from app.models.sync_log import SyncLog
 from app.models.tenant import Tenant
 from app.services.alerting_service import check_and_alert
+from app.services.notification_service import notify_lab_leaders
 from app.services.sync_service import get_challenges_by_ext_id, sync_one_member
 
 logger = logging.getLogger(__name__)
@@ -136,15 +137,33 @@ def finalize_sync_log_task(results: list[dict], tenant_id: str, platform_id: str
     try:
         with tenant_session(tenant_id) as db:
             errors = [f"member {r['member_id']}: {r['error']}" for r in results if r.get("error")]
-            db.add(
-                SyncLog(
-                    tenant_id=uuid.UUID(tenant_id),
-                    platform_id=uuid.UUID(platform_id),
-                    status="ok" if not errors else "partial_error",
-                    members_checked=len(results),
-                    errors="; ".join(errors) if errors else None,
-                )
+            sync_log = SyncLog(
+                tenant_id=uuid.UUID(tenant_id),
+                platform_id=uuid.UUID(platform_id),
+                status="ok" if not errors else "partial_error",
+                members_checked=len(results),
+                errors="; ".join(errors) if errors else None,
+                # §8 — real counts for the Job History view, not just
+                # buried in `errors` (which never held them anyway).
+                updated_count=sum(len(r.get("updated") or []) for r in results),
+                conflicts_count=sum(len(r.get("conflicts") or []) for r in results),
             )
+            db.add(sync_log)
+            db.flush()
+            if errors:
+                # §12 — each occurrence is new information (unlike the
+                # semester-report nudge), so dedupe=False: don't suppress
+                # a fresh error just because a past run also failed.
+                notify_lab_leaders(
+                    db,
+                    uuid.UUID(tenant_id),
+                    type="sync_error",
+                    title="Scheduled sync had errors",
+                    body="; ".join(errors)[:500],
+                    target_type="sync_log",
+                    target_id=sync_log.id,
+                    dedupe=False,
+                )
             db.commit()
             # Phase 6 alerting: checks trailing sync_log history for this
             # tenant and emails Super Admin once if it just crossed

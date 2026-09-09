@@ -22,6 +22,15 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 12
 
     CORS_ORIGINS: str = "http://localhost:3000"
+    # §2 forgot-password: base URL used to build the reset link in the
+    # email (e.g. "{PUBLIC_APP_URL}/reset-password?token=..."). Kept
+    # separate from CORS_ORIGINS (an allow-list, not necessarily ordered
+    # or singular) even though they hold the same value in this project's
+    # single-frontend deployment.
+    PUBLIC_APP_URL: str = "http://localhost:3000"
+
+    # §2 — how long a forgot-password reset link/token stays valid.
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 30
 
     SUPER_ADMIN_BOOTSTRAP_EMAIL: str | None = None
     SUPER_ADMIN_BOOTSTRAP_PASSWORD: str | None = None
@@ -44,12 +53,21 @@ class Settings(BaseSettings):
     # detection speed, not accuracy). Default: once a day.
     SYNC_INTERVAL_MINUTES: int = 1440
 
-    # Reminder check: once daily at this UTC hour (0-23).
+    # Superseded by per-Lab TenantAutomationSettings + app.tasks.
+    # automation_dispatcher — reminders and the weekly report used to run
+    # on one system-wide schedule read from these three values; now every
+    # Lab has its own schedule in the DB, editable from Settings. Left
+    # here (unused) rather than deleted since existing .env files still
+    # define them and removing outright isn't necessary.
     REMINDER_CHECK_HOUR_UTC: int = 6
-    # Weekly report: day_of_week (0=Sunday..6=Saturday, Celery crontab
-    # convention) + hour, both UTC. Default: Monday 00:00 UTC.
     WEEKLY_REPORT_DAY_OF_WEEK: int = 1
     WEEKLY_REPORT_HOUR_UTC: int = 0
+
+    # How often app.tasks.automation_dispatcher.dispatch_automation checks
+    # every active Tenant's own schedule. Short enough that a schedule
+    # fires within a few minutes of its target time, long enough not to
+    # hammer the DB — this is a coarse polling tick, not itself a schedule.
+    AUTOMATION_DISPATCH_INTERVAL_SECONDS: int = 300
 
     # System-default SMTP, used when a Tenant hasn't configured its own
     # (PRD §3.4: "fallback SMTP mặc định của hệ thống nếu Lab chưa cấu hình").

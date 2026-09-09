@@ -3,21 +3,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
-import { NAV_ITEMS } from "./sidebar";
+import type { MemberRole } from "@/lib/types";
+import { visibleNavItems } from "./sidebar";
 
 interface CommandPaletteProps {
   open: boolean;
   onClose: () => void;
+  role: MemberRole;
 }
 
-export function CommandPalette({ open, onClose }: CommandPaletteProps) {
+export function CommandPalette({ open, onClose, role }: CommandPaletteProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
 
+  // §6 — same role filter as the sidebar, so the palette never offers a
+  // page this role can't actually use.
+  const items = visibleNavItems(role);
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return q ? NAV_ITEMS.filter((item) => item.label.toLowerCase().includes(q)) : NAV_ITEMS;
-  }, [query]);
+    return q ? items.filter((item) => item.label.toLowerCase().includes(q)) : items;
+  }, [query, items]);
 
   useEffect(() => {
     if (!open) return;
