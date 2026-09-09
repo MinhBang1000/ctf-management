@@ -23,7 +23,7 @@ def test_get_creates_default_row_with_expected_defaults(leader_client):
     assert body["reminder"]["repeat"] == "daily"
     assert body["reminder"]["enabled"] is True
     assert body["weekly_report"]["repeat"] == "weekly"
-    assert body["weekly_report"]["day_of_week"] == 1  # Tuesday, matches old system default
+    assert body["weekly_report"]["day_of_week"] == 0  # Monday — see model's convention-mismatch note
     assert body["weekly_report_auto_send"] is False
 
 

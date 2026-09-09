@@ -41,7 +41,7 @@ def upgrade() -> None:
     sa.Column('weekly_report_enabled', sa.Boolean(), server_default=sa.text('true'), nullable=False),
     sa.Column('weekly_report_repeat', sa.String(length=20), server_default='weekly', nullable=False),
     sa.Column('weekly_report_time_of_day', sa.Time(), server_default=sa.text("'00:00:00'"), nullable=False),
-    sa.Column('weekly_report_day_of_week', sa.Integer(), server_default=sa.text('1'), nullable=True),
+    sa.Column('weekly_report_day_of_week', sa.Integer(), server_default=sa.text('0'), nullable=True),
     sa.Column('weekly_report_day_of_month', sa.Integer(), nullable=True),
     sa.Column('weekly_report_interval_days', sa.Integer(), nullable=True),
     sa.Column('weekly_report_auto_send', sa.Boolean(), server_default=sa.text('false'), nullable=False),

@@ -8,12 +8,18 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 
 # Matches the previous system-wide .env defaults (REMINDER_CHECK_HOUR_UTC=6,
-# WEEKLY_REPORT_DAY_OF_WEEK=1/Tuesday, WEEKLY_REPORT_HOUR_UTC=0) so migrating
-# an existing Lab to per-Lab settings doesn't silently change when its
-# automation runs.
+# WEEKLY_REPORT_DAY_OF_WEEK=1, WEEKLY_REPORT_HOUR_UTC=0) so migrating an
+# existing Lab to per-Lab settings doesn't silently change when its
+# automation runs. NOTE the day-of-week convention differs between the
+# two: the old .env value used Celery crontab's convention (0=Sunday,
+# 1=Monday, ...), so WEEKLY_REPORT_DAY_OF_WEEK=1 there meant Monday.
+# app.services.automation_schedule.RepeatSchedule.day_of_week uses Python's
+# datetime.weekday() convention instead (0=Monday, ..., 6=Sunday), so the
+# equivalent value here is 0, not 1 — this is deliberately NOT a copy of
+# the raw old integer.
 DEFAULT_REMINDER_TIME = time(6, 0)
 DEFAULT_WEEKLY_REPORT_TIME = time(0, 0)
-DEFAULT_WEEKLY_REPORT_DAY_OF_WEEK = 1
+DEFAULT_WEEKLY_REPORT_DAY_OF_WEEK = 0
 
 
 class TenantAutomationSettings(Base):
