@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, time
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Time, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, Time, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -52,6 +52,21 @@ class TenantAutomationSettings(Base):
     reminder_day_of_month: Mapped[int | None] = mapped_column(Integer, nullable=True)
     reminder_interval_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     reminder_last_fired_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    # True (default) preserves the original behavior: reminders go
+    # straight to Members, no review step — reminders were explicitly
+    # "no draft/approve gate" per PRD §6.7, since they're internal
+    # nudges, not communication leaving the Lab. Flipping this to False
+    # is an explicit opt-in into a review queue (see ReminderLog.status),
+    # for a Lab Leader who wants to see/edit what's about to go out first.
+    reminder_auto_send: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # NULL means "use the built-in default template"
+    # (app/templates/reminder_email.txt.j2 + the default subject
+    # constant) — both rendered with the same Jinja placeholders
+    # ({{ member_name }}, {{ challenge_title }}, {{ deadline }},
+    # {{ days_left }}, {{ milestone }}) whether custom or default, so
+    # switching between them never changes what data is available.
+    reminder_subject_template: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    reminder_body_template: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     weekly_report_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     weekly_report_repeat: Mapped[str] = mapped_column(String(20), nullable=False, default="weekly")

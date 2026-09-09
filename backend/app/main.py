@@ -18,6 +18,7 @@ from app.api.v1 import members as v1_members
 from app.api.v1 import notifications as v1_notifications
 from app.api.v1 import platforms as v1_platforms
 from app.api.v1 import progress as v1_progress
+from app.api.v1 import reminders as v1_reminders
 from app.api.v1 import reports as v1_reports
 from app.api.v1 import semesters as v1_semesters
 from app.api.v1 import settings as v1_settings
@@ -54,6 +55,7 @@ app.include_router(v1_platforms.router, prefix="/api/v1")
 app.include_router(v1_dashboard.router, prefix="/api/v1")
 app.include_router(v1_data_export.router, prefix="/api/v1")
 app.include_router(v1_feedback.router, prefix="/api/v1")
+app.include_router(v1_reminders.router, prefix="/api/v1")
 app.include_router(v1_reports.router, prefix="/api/v1")
 app.include_router(v1_settings.router, prefix="/api/v1")
 

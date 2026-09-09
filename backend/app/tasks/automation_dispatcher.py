@@ -82,9 +82,16 @@ def _auto_send_report(db, report, tenant, kind: str = "initial") -> None:
 def _dispatch_reminders(db, tenant, tenant_id, settings, now) -> None:
     if not is_due(_reminder_schedule(settings), now, settings.reminder_last_fired_at):
         return
-    result = send_reminders_for_tenant(db, tenant)
+    result = send_reminders_for_tenant(db, tenant, settings)
     settings.reminder_last_fired_at = now
     db.commit()
+    if result["queued"]:
+        notify_lab_leaders(
+            db, tenant_id, type="reminders_ready",
+            title=f"{len(result['queued'])} reminder(s) ready to review",
+            body="Review and send them from Automation.",
+            target_type="reminder", target_id=None,
+        )
     record_job_run(
         db, tenant_id, "reminder", success=not result["errors"],
         detail="; ".join(result["errors"]) if result["errors"] else None,

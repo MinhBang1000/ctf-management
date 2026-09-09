@@ -25,6 +25,41 @@ def test_get_creates_default_row_with_expected_defaults(leader_client):
     assert body["weekly_report"]["repeat"] == "weekly"
     assert body["weekly_report"]["day_of_week"] == 0  # Monday — see model's convention-mismatch note
     assert body["weekly_report_auto_send"] is False
+    assert body["reminder_auto_send"] is True  # preserves original always-auto behavior
+    assert body["reminder_subject_template"] is None
+    assert body["reminder_body_template"] is None
+    assert "{{ challenge_title }}" in body["default_reminder_subject_template"]
+    assert "{{ member_name }}" in body["default_reminder_body_template"]
+
+
+def test_patch_reminder_template_and_auto_send(leader_client):
+    resp = leader_client.patch(
+        "/api/v1/settings/automation",
+        json=_payload(
+            reminder_auto_send=False,
+            reminder_subject_template="Custom: {{ challenge_title }}",
+            reminder_body_template="Hi {{ member_name }}, custom body.",
+        ),
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["reminder_auto_send"] is False
+    assert body["reminder_subject_template"] == "Custom: {{ challenge_title }}"
+    assert body["reminder_body_template"] == "Hi {{ member_name }}, custom body."
+
+    again = leader_client.get("/api/v1/settings/automation").json()
+    assert again["reminder_subject_template"] == "Custom: {{ challenge_title }}"
+
+
+def test_patch_empty_template_clears_it_back_to_default(leader_client):
+    leader_client.patch(
+        "/api/v1/settings/automation",
+        json=_payload(reminder_subject_template="Custom", reminder_body_template="Custom body"),
+    )
+    resp = leader_client.patch("/api/v1/settings/automation", json=_payload())  # no template fields -> default None
+    assert resp.status_code == 200
+    assert resp.json()["reminder_subject_template"] is None
+    assert resp.json()["reminder_body_template"] is None
 
 
 def test_patch_updates_and_returns_new_values(leader_client):

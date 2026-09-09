@@ -34,9 +34,26 @@ class AutomationSettingsUpdate(BaseModel):
     reminder: RepeatScheduleIn
     weekly_report: RepeatScheduleIn
     weekly_report_auto_send: bool
+    # True (default, matches TenantAutomationSettings.reminder_auto_send)
+    # sends reminders straight to Members, same as always. False routes
+    # them into the pending-reminders review queue instead (see
+    # app/api/v1/reminders.py).
+    reminder_auto_send: bool = True
+    # None/empty string means "use the built-in default" — see
+    # ReminderTemplatePreview for what that default actually renders to.
+    reminder_subject_template: str | None = Field(default=None, max_length=500)
+    reminder_body_template: str | None = None
 
 
 class AutomationSettingsOut(BaseModel):
     reminder: RepeatScheduleOut
     weekly_report: RepeatScheduleOut
     weekly_report_auto_send: bool
+    reminder_auto_send: bool
+    reminder_subject_template: str | None
+    reminder_body_template: str | None
+    # The actual built-in defaults, so the frontend can show them as
+    # placeholder text — the Lab Leader edits starting from what's
+    # already being sent, not a blank box.
+    default_reminder_subject_template: str
+    default_reminder_body_template: str

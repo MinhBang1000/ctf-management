@@ -16,6 +16,7 @@ from app.schemas.settings import (
 from app.services.audit_service import record_audit
 from app.services.automation_settings_service import get_or_create_automation_settings
 from app.services.email_service import EmailConfigError, EmailSendError, send_test_email
+from app.services.reminder_service import DEFAULT_REMINDER_SUBJECT_TEMPLATE, default_reminder_body_template
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
@@ -33,6 +34,11 @@ def _automation_out(s) -> AutomationSettingsOut:
             interval_days=s.weekly_report_interval_days, last_fired_at=s.weekly_report_last_fired_at.isoformat(),
         ),
         weekly_report_auto_send=s.weekly_report_auto_send,
+        reminder_auto_send=s.reminder_auto_send,
+        reminder_subject_template=s.reminder_subject_template,
+        reminder_body_template=s.reminder_body_template,
+        default_reminder_subject_template=DEFAULT_REMINDER_SUBJECT_TEMPLATE,
+        default_reminder_body_template=default_reminder_body_template(),
     )
 
 
@@ -138,10 +144,13 @@ def update_automation_settings(
         w.day_of_week, w.day_of_month, w.interval_days,
     )
     s.weekly_report_auto_send = payload.weekly_report_auto_send
+    s.reminder_auto_send = payload.reminder_auto_send
+    s.reminder_subject_template = payload.reminder_subject_template or None
+    s.reminder_body_template = payload.reminder_body_template or None
     record_audit(
         db, tenant_id=current.tenant_id, actor=current, action="settings.automation_updated",
         summary=f"{current.email} updated automation settings (reminder={r.repeat}, weekly_report={w.repeat}, "
-        f"auto_send={payload.weekly_report_auto_send})",
+        f"weekly_auto_send={payload.weekly_report_auto_send}, reminder_auto_send={payload.reminder_auto_send})",
         target_type="tenant", target_id=current.tenant_id,
     )
     db.commit()

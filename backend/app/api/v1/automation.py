@@ -11,6 +11,7 @@ from app.models.tenant import Tenant
 from app.schemas.automation import JobRunOut, RetryJobRequest, SyncRunOut
 from app.services.alerting_service import record_job_run
 from app.services.audit_service import record_audit
+from app.services.automation_settings_service import get_or_create_automation_settings
 from app.services.reminder_service import send_reminders_for_tenant
 from app.services.report_service import generate_weekly_report_for_tenant
 from app.services.sync_service import SyncCooldownError, run_sync_for_platform
@@ -100,9 +101,13 @@ def retry_job(
             raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
         summary = f"Retried sync — {result['members_checked']} checked, {len(result['updated'])} updated"
     elif payload.job_type == "reminder":
-        result = send_reminders_for_tenant(db, tenant)
+        # Respect the Lab's own reminder_auto_send preference here too —
+        # a manual retry must not bypass the review-queue mode the Lab
+        # Leader explicitly chose.
+        automation_settings = get_or_create_automation_settings(db, current.tenant_id)
+        result = send_reminders_for_tenant(db, tenant, automation_settings)
         record_job_run(db, current.tenant_id, "reminder", success=not result["errors"])
-        summary = f"Retried reminders — {len(result['sent'])} sent, {len(result['errors'])} error(s)"
+        summary = f"Retried reminders — {len(result['sent'])} sent, {len(result['queued'])} queued for review, {len(result['errors'])} error(s)"
     else:  # weekly_report
         report = generate_weekly_report_for_tenant(db, tenant)
         record_job_run(db, current.tenant_id, "weekly_report", success=report is not None)
