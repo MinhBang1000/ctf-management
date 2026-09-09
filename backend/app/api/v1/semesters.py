@@ -81,8 +81,11 @@ def generate_semester_report(
     db: Session = Depends(get_db),
     current: Member = Depends(require_roles(MemberRole.LAB_LEADER)),
 ):
-    """PRD §6.11 — manual only, never automatic on end_date (closing out a
-    semester is an administrative decision, per the Phase 5 plan)."""
+    """PRD §6.11 — manual trigger, always available regardless of the
+    automation settings below (a Lab Leader can always generate/refresh a
+    semester report on demand; report_trigger_date + report_automation_enabled
+    on the Semester only control the automation dispatcher's own automatic
+    trigger, they don't gate this endpoint)."""
     semester = _query(db, current.tenant_id).filter(Semester.id == semester_id).first()
     if not semester:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Semester not found")
