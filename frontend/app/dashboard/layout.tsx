@@ -20,6 +20,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/dashboard/progress": "Progress",
   "/dashboard/platforms": "Platforms",
   "/dashboard/reports": "Reports",
+  "/dashboard/reminders": "Reminders",
   "/dashboard/automation": "Automation",
   "/dashboard/audit-log": "Audit Log",
   "/dashboard/settings": "Settings",

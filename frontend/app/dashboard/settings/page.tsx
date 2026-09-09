@@ -254,13 +254,51 @@ export default function SettingsPage() {
               trigger date instead, set per-Semester on the Semesters page.
             </p>
 
-            <div className="space-y-2 border-b border-[var(--border)] pb-6">
+            <div className="space-y-3 border-b border-[var(--border)] pb-6">
               <Label className="mb-0 text-sm font-bold">Reminders (T-3 / T-1 emails to members)</Label>
               <RepeatScheduleEditor
                 idPrefix="reminder"
                 value={automation.reminder}
                 onChange={(reminder) => setAutomation({ ...automation, reminder })}
               />
+              <label className="flex items-center gap-2 pt-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={automation.reminder_auto_send}
+                  onChange={(e) => setAutomation({ ...automation, reminder_auto_send: e.target.checked })}
+                />
+                Send reminders straight to members automatically (uncheck to review/edit each one first at{" "}
+                <a href="/dashboard/reminders" className="underline">
+                  Reminders
+                </a>
+                )
+              </label>
+
+              <div>
+                <Label htmlFor="reminderSubjectTemplate">Custom subject (optional)</Label>
+                <Input
+                  id="reminderSubjectTemplate"
+                  value={automation.reminder_subject_template ?? ""}
+                  placeholder={automation.default_reminder_subject_template}
+                  onChange={(e) => setAutomation({ ...automation, reminder_subject_template: e.target.value || null })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="reminderBodyTemplate">Custom body (optional)</Label>
+                <textarea
+                  id="reminderBodyTemplate"
+                  rows={6}
+                  className="w-full rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 font-data text-xs"
+                  value={automation.reminder_body_template ?? ""}
+                  placeholder={automation.default_reminder_body_template}
+                  onChange={(e) => setAutomation({ ...automation, reminder_body_template: e.target.value || null })}
+                />
+                <p className="mt-1 text-xs text-muted">
+                  Leave either blank to keep using the default shown as placeholder text. Available placeholders:{" "}
+                  <code>{"{{ member_name }}"}</code> <code>{"{{ challenge_title }}"}</code>{" "}
+                  <code>{"{{ deadline }}"}</code> <code>{"{{ days_left }}"}</code> <code>{"{{ milestone }}"}</code>
+                </p>
+              </div>
             </div>
 
             <div className="space-y-2">

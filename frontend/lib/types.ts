@@ -81,6 +81,29 @@ export interface AutomationSettings {
   reminder: RepeatSchedule;
   weekly_report: RepeatSchedule;
   weekly_report_auto_send: boolean;
+  reminder_auto_send: boolean;
+  reminder_subject_template: string | null;
+  reminder_body_template: string | null;
+  default_reminder_subject_template: string;
+  default_reminder_body_template: string;
+}
+
+export type ReminderStatus = "pending" | "sent" | "failed";
+
+export interface PendingReminder {
+  id: string;
+  member_id: string;
+  member_name: string;
+  member_email: string;
+  challenge_id: string;
+  challenge_title: string;
+  milestone: string;
+  status: ReminderStatus;
+  subject: string | null;
+  body: string | null;
+  error_detail: string | null;
+  created_at: string;
+  sent_at: string | null;
 }
 
 export interface Platform {
