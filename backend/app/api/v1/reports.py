@@ -135,6 +135,29 @@ def update_report(
     return report
 
 
+@router.delete("/{report_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_report(
+    report_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current: Member = Depends(require_roles(MemberRole.LAB_LEADER)),
+):
+    """Conservative default (no explicit spec for this): a report that has
+    already been sent to the professor is never deletable — it's a real
+    record of something that actually happened (and ReportSendAttempt rows
+    FK to it), so deleting it would falsify the Lab's own history. Only a
+    still-draft report (never sent) can be removed."""
+    report = _get_or_404(db, current.tenant_id, report_id)
+    if report.status == "sent":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete a report that has already been sent")
+    record_audit(
+        db, tenant_id=current.tenant_id, actor=current, action="report.deleted",
+        summary=f"Deleted draft {report.type} report ({report.period_start} to {report.period_end})",
+        target_type="report", target_id=report.id,
+    )
+    db.delete(report)
+    db.commit()
+
+
 @router.post("/{report_id}/approve", response_model=ReportOut)
 def approve_report(
     report_id: uuid.UUID,

@@ -135,6 +135,36 @@ def test_cannot_approve_already_sent_report(leader_client, db, tenant):
     assert again.status_code == 400
 
 
+# --- Report deletion (Lab Leader only, draft-only) -----------------------
+
+def test_can_delete_a_draft_report(leader_client, db, tenant):
+    make_semester(db, tenant)
+    report = generate_weekly_report_for_tenant(db, tenant)
+    resp = leader_client.delete(f"/api/v1/reports/{report.id}")
+    assert resp.status_code == 204
+    assert leader_client.get(f"/api/v1/reports/{report.id}").status_code == 404
+
+
+def test_cannot_delete_a_sent_report(leader_client, db, tenant):
+    make_semester(db, tenant)
+    report = generate_weekly_report_for_tenant(db, tenant)
+    with patch("app.api.v1.reports.send_email"):
+        leader_client.post(f"/api/v1/reports/{report.id}/approve", json={"to_address": "prof@example.com"})
+    resp = leader_client.delete(f"/api/v1/reports/{report.id}")
+    assert resp.status_code == 400
+    assert leader_client.get(f"/api/v1/reports/{report.id}").status_code == 200
+
+
+def test_non_leader_cannot_delete_report(client, db, tenant, presenter):
+    from tests.conftest import login_as
+
+    make_semester(db, tenant)
+    report = generate_weekly_report_for_tenant(db, tenant)
+    login_as(client, presenter.email, "presenterpass123")
+    resp = client.delete(f"/api/v1/reports/{report.id}")
+    assert resp.status_code == 403
+
+
 # --- §13 historical reports include inactive members --------------------
 
 def test_semester_report_includes_member_deactivated_after_participating(db, tenant):

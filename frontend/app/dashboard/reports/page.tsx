@@ -39,7 +39,7 @@ export default function ReportsPage() {
   }
 
   useEffect(() => {
-    load();
+    if (canManage) load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -115,6 +115,18 @@ export default function ReportsPage() {
     }
   }
 
+  async function deleteReport(report: Report) {
+    if (!confirm(`Delete this draft ${report.type} report (${report.period_start} – ${report.period_end})?`)) return;
+    try {
+      await api.delete(`/api/v1/reports/${report.id}`);
+      if (openId === report.id) setOpenId(null);
+      await load();
+      pushToast("success", "Report deleted");
+    } catch (err) {
+      pushToast("error", err instanceof ApiError ? err.message : "Failed to delete report");
+    }
+  }
+
   async function generateNow() {
     setGenerating(true);
     setError(null);
@@ -128,6 +140,10 @@ export default function ReportsPage() {
     } finally {
       setGenerating(false);
     }
+  }
+
+  if (!canManage) {
+    return <p className="text-muted">Only the Lab Leader can view Reports.</p>;
   }
 
   return (
@@ -189,6 +205,11 @@ export default function ReportsPage() {
                   <Button variant="outline" onClick={() => openReport(r)}>
                     {isOpen ? "Close" : r.status === "draft" ? "Review" : "View"}
                   </Button>
+                  {canManage && r.status === "draft" && (
+                    <Button variant="destructive" onClick={() => deleteReport(r)}>
+                      Delete
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               {isOpen && (
