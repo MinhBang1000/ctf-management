@@ -29,6 +29,12 @@ export default function SemestersPage() {
   const [endDate, setEndDate] = useState("");
   const [isCurrent, setIsCurrent] = useState(false);
 
+  const [automationTargetId, setAutomationTargetId] = useState<string | null>(null);
+  const [triggerDate, setTriggerDate] = useState("");
+  const [automationEnabled, setAutomationEnabled] = useState(true);
+  const [autoSend, setAutoSend] = useState(false);
+  const [savingAutomation, setSavingAutomation] = useState(false);
+
   async function load() {
     setSemesters(await api.get<Semester[]>("/api/v1/semesters"));
   }
@@ -73,6 +79,33 @@ export default function SemestersPage() {
     await api.delete(`/api/v1/semesters/${semester.id}`);
     await load();
     pushToast("success", `${semester.name} deleted`);
+  }
+
+  function openAutomation(semester: Semester) {
+    setAutomationTargetId(semester.id);
+    setTriggerDate(semester.report_trigger_date);
+    setAutomationEnabled(semester.report_automation_enabled);
+    setAutoSend(semester.report_auto_send);
+  }
+
+  async function saveAutomation(e: FormEvent) {
+    e.preventDefault();
+    if (!automationTargetId) return;
+    setSavingAutomation(true);
+    try {
+      await api.patch(`/api/v1/semesters/${automationTargetId}`, {
+        report_trigger_date: triggerDate,
+        report_automation_enabled: automationEnabled,
+        report_auto_send: autoSend,
+      });
+      pushToast("success", "Report automation saved");
+      setAutomationTargetId(null);
+      await load();
+    } catch (err) {
+      pushToast("error", err instanceof ApiError ? err.message : "Failed to save");
+    } finally {
+      setSavingAutomation(false);
+    }
   }
 
   async function generateReport(semester: Semester) {
@@ -140,6 +173,50 @@ export default function SemestersPage() {
 
       {!showForm && error && <p className="text-sm text-[var(--status-missing)]">{error}</p>}
 
+      {canManage && automationTargetId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              Report automation for {semesters.find((s) => s.id === automationTargetId)?.name}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={saveAutomation} className="space-y-4">
+              <p className="text-sm text-muted">
+                Defaults to this Semester&apos;s end date, but can be moved independently — changing the end date
+                later won&apos;t move it again.
+              </p>
+              <div>
+                <Label htmlFor="triggerDate">Trigger date</Label>
+                <Input
+                  id="triggerDate"
+                  type="date"
+                  required
+                  value={triggerDate}
+                  onChange={(e) => setTriggerDate(e.target.value)}
+                />
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={automationEnabled} onChange={(e) => setAutomationEnabled(e.target.checked)} />
+                Automatically generate the semester report on the trigger date
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={autoSend} onChange={(e) => setAutoSend(e.target.checked)} />
+                Auto-send it to the professor email (Settings) instead of just notifying me to review it
+              </label>
+              <div className="flex gap-2">
+                <Button type="submit" disabled={savingAutomation}>
+                  {savingAutomation ? "Saving…" : "Save"}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setAutomationTargetId(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardContent className="overflow-x-auto p-0">
           <table className="hs-table">
@@ -168,6 +245,9 @@ export default function SemestersPage() {
                       )}{" "}
                       <Button variant="outline" disabled={generatingId === s.id} onClick={() => generateReport(s)}>
                         {generatingId === s.id ? "Generating…" : "Generate Report"}
+                      </Button>{" "}
+                      <Button variant="outline" onClick={() => openAutomation(s)}>
+                        Automate{s.report_automation_enabled ? "" : " (off)"}
                       </Button>{" "}
                       <Button variant="destructive" onClick={() => remove(s)}>
                         Delete

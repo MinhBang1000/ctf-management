@@ -60,6 +60,27 @@ export interface Semester {
   start_date: string;
   end_date: string;
   is_current: boolean;
+  report_trigger_date: string;
+  report_automation_enabled: boolean;
+  report_auto_send: boolean;
+}
+
+export type RepeatKind = "never" | "daily" | "weekly" | "biweekly" | "monthly" | "custom";
+
+export interface RepeatSchedule {
+  enabled: boolean;
+  repeat: RepeatKind;
+  time_of_day: string; // "HH:MM:SS"
+  day_of_week: number | null; // 0=Monday .. 6=Sunday
+  day_of_month: number | null;
+  interval_days: number | null;
+  last_fired_at?: string;
+}
+
+export interface AutomationSettings {
+  reminder: RepeatSchedule;
+  weekly_report: RepeatSchedule;
+  weekly_report_auto_send: boolean;
 }
 
 export interface Platform {
